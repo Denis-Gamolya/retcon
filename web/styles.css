@@ -308,15 +308,24 @@ body.picker-open { position: fixed; width: 100%; overflow: hidden; }
   .panel { padding: 20px; }
 }
 /* Landscape pairs a large canvas and caption with a separate tool rail. */
+.landscape-room-toggle { display: none; }
+.landscape-room-panel { position: fixed; inset: 44px max(12px, env(safe-area-inset-right)) auto auto; margin: 0; width: min(300px, calc(100vw - 24px)); max-height: calc(100dvh - 64px); overflow-y: auto; overscroll-behavior: contain; padding: 16px; background: var(--paper); color: var(--text); border: 1px solid var(--border); border-radius: 3px; box-shadow: 0 4px 18px #27262030; }
+.landscape-room-panel h3 { margin-bottom: 12px; }
+.room-menu-code { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.room-menu-code code { font-size: 20px; letter-spacing: 2px; }
+.room-menu-roster > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13px; }
+.room-menu-roster small { color: var(--muted); }
 @media (orientation: landscape) and (max-height: 500px) and (min-width: 480px) {
   body:has(.phase-draw) #app { position: relative; max-width: none; padding: 6px max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left)); }
   body:has(.phase-draw) .room-bar { position: absolute; z-index: 1; top: 6px; right: max(12px, env(safe-area-inset-right)); width: 240px; margin: 0; padding: 0; border: 0; }
-  body:has(.phase-draw) .site-header, body:has(.phase-draw) .room-brand, body:has(.phase-draw) .room-code, body:has(.phase-draw) [data-action="copy-code"] { display: none; }
+  body:has(.phase-draw) .site-header, body:has(.phase-draw) .room-brand, body:has(.phase-draw) .room-code, body:has(.phase-draw) .room-bar [data-action="copy-code"] { display: none; }
   body:has(.phase-draw) .room-bar .inline { display: flex; justify-content: space-between; gap: 0; }
+  body:has(.phase-draw) .landscape-room-toggle { display: inline-block; }
   body:has(.phase-draw) .room-bar button { min-height: 32px; padding: 4px; font-size: 11px; }
   .phase-draw .player-strip { display: none; }
   .phase-draw #stage { display: grid; height: calc(100dvh - 12px - env(safe-area-inset-bottom)); grid-template-columns: minmax(0, 1fr) 240px; grid-template-rows: 32px 28px minmax(0, 1fr) 44px; gap: 6px 12px; }
-  .phase-draw .assigned-prompt { grid-column: 1; grid-row: 4; margin: 0; font-size: 15px; gap: 8px; line-height: 1.2; }
+  .phase-draw .assigned-prompt { grid-column: 1; grid-row: 4; justify-self: center; width: min(100%, calc((100dvh - 64px - env(safe-area-inset-bottom)) * 1.6)); margin: 0; font-size: 15px; gap: 8px; line-height: 1.2; }
+  .phase-draw .assigned-prompt > span { min-width: 0; flex: 1; }
   .phase-draw .shuffle-prompt { width: 44px; height: 44px; min-height: 44px; padding: 8px; }
   .phase-draw .stage-top { grid-column: 2; grid-row: 2; margin: 0; }
   .phase-draw .phase-heading h1, .phase-draw .phase-hint { display: none; }

@@ -221,7 +221,8 @@ function accept(next) {
 }
 
 function renderRoom() {
-  app.innerHTML = `<div class="room-bar"><a class="room-brand" href="/" aria-label="Sketchy Alibis home">SKETCHY<br>ALIBIS.</a><div class="inline"><button type="button" class="room-code" data-action="toggle-code" aria-label="${roomCodeVisible ? 'Hide' : 'Reveal'} room code" aria-pressed="${roomCodeVisible}">${roomCodeVisible ? state.code : '••••••'}</button><button class="secondary small-button" data-action="copy-code">Copy code</button><button class="secondary small-button" data-action="copy-link">Copy invite</button><button class="secondary small-button" data-action="leave">Leave game</button></div></div>
+  app.innerHTML = `<div class="room-bar"><a class="room-brand" href="/" aria-label="Sketchy Alibis home">SKETCHY<br>ALIBIS.</a><div class="inline"><button class="secondary small-button landscape-room-toggle" popovertarget="landscape-room-panel" aria-label="Room controls and players">Room</button><button type="button" class="room-code" data-action="toggle-code" aria-label="${roomCodeVisible ? 'Hide' : 'Reveal'} room code" aria-pressed="${roomCodeVisible}">${roomCodeVisible ? state.code : '••••••'}</button><button class="secondary small-button" data-action="copy-code">Copy code</button><button class="secondary small-button" data-action="copy-link">Copy invite</button><button class="secondary small-button" data-action="leave">Leave game</button></div></div>
+    <div id="landscape-room-panel" class="landscape-room-panel" popover="auto" aria-labelledby="landscape-room-title"><h3 id="landscape-room-title">Room</h3><div class="room-menu-code"><code>${state.code}</code><button class="secondary small-button" data-action="copy-code">Copy code</button></div><div class="room-menu-roster" aria-label="Players"></div></div>
     <div class="layout phase-${state.phase}"><section id="stage"></section><aside id="scores" class="panel scoreboard" aria-label="Players and scores"></aside></div>`;
   renderScores();
   renderStage();
@@ -230,6 +231,8 @@ function renderRoom() {
 function renderScores() {
   const scoreboard = document.querySelector('#scores');
   if (!scoreboard) return;
+  const roomRoster = document.querySelector('.room-menu-roster');
+  if (roomRoster) roomRoster.innerHTML = state.players.map((player) => `<div><span>${escape(player.name)}${player.id === state.meId ? ' (you)' : ''}</span><small>${!player.connected ? 'Offline' : player.ready ? 'Ready' : player.id === state.hostId ? 'Host' : ''}</small></div>`).join('');
   const compact = ['draw', 'claim', 'judge'].includes(state.phase);
   const players = [...state.players].sort((first, second) => compact ? 0 : second.score - first.score);
   scoreboard.classList.toggle('player-strip', compact);

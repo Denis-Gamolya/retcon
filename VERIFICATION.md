@@ -22,6 +22,10 @@ Verified locally and on the existing Netlify project on October 20, 2026.
   the right rail is 240 pixels wide. At 667×320, the canvas measures 374×234.
   Checks at 844×390, 667×320, and 568×320 keep the prompt, sliders, and Submit
   visible without page scrolling.
+- At 874×346, the caption's left and right edges exactly match the canvas
+  frame. Landscape's Room menu exposes the room code, Copy code, and the
+  current player list; Copy invite and Leave game remain on the rail. Opening,
+  copying, Escape dismissal, and restoring the portrait top panel were checked.
 - At 390×700, the modal picker scrolls its own family list while the background
   stays fixed. Choosing a searched replacement closes it, restores the previous
   page scroll position, and removes the scroll lock. Rotation to landscape also
