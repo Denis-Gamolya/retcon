@@ -57,7 +57,7 @@ h3 { font-size: 14px; font-weight: 700; }
 .header-side { font-size: 13px; color: var(--muted); }
 #app { max-width: 1144px; margin: auto; padding: 24px 24px 60px; }
 /* The home screen uses a printed headline and one sheet for the form. */
-.setup { display: grid; grid-template-columns: 1.2fr 1fr; gap: 90px; align-items: center; padding: 40px 16px; }
+.setup { display: grid; grid-template-columns: 1.2fr 1fr; gap: 90px; align-items: start; padding: 40px 16px; }
 .setup h1 { font-size: clamp(32px, 4.6vw, 58px); text-transform: uppercase; margin: 24px 0 0; }
 .highlight { color: var(--text); position: relative; }
 .home-doodle { display: flex; align-items: center; width: 260px; height: 117px; gap: 6px; margin: 15px 0 0; }
