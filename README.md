@@ -1,0 +1,140 @@
+# Sketchy Alibis — Netlify edition
+
+The existing sketchbook design and gameplay, with a stateless Netlify Function
+and site-scoped Netlify Blobs. No GitHub repository, local commands, API keys,
+user-configured environment variables, or manual database setup are needed to
+publish. Netlify supplies its Blobs connection automatically.
+
+## Publish using your browser
+
+### Automatic updates with GitHub
+
+Connect the source repository to the existing Netlify project under continuous
+deployment, using `main` as the production branch. Netlify reads `netlify.toml`:
+the build command is `node tools/build.mjs`, the publish directory is `dist`,
+and the functions directory is `netlify/functions`. Leave the base directory
+at the repository root. The committed lockfile and package-manager version
+control dependency installation.
+
+After changes are tested and pushed to `main`, Netlify builds and publishes
+them at the existing project URL. Local edits alone do not deploy. No new ZIP
+is needed for this workflow. Schedule gameplay or storage changes between
+playtests to avoid changing rules during an active game.
+
+Official instructions:
+https://docs.netlify.com/build/git-workflows/repo-permissions-linking/
+
+### Manual project upload
+
+1. Extract `netlify-ready-game.zip` into a folder.
+2. Sign in to Netlify and use its project-folder upload / drag-and-drop flow.
+3. Drop the **complete extracted project folder**, the one containing
+   `netlify.toml` and `package.json`. Do not upload only `dist`.
+4. Let Netlify install dependencies, run the configured build, and deploy the
+   `game` function. Then open the generated HTTPS link.
+5. Create a room and share Copy invite with your playtesters.
+
+Use the logged-in source-project build flow. Anonymous static Drop, and output-only
+manual uploads, do not build this backend. Netlify's current documentation says
+logged-in project uploads can run a build, and instructs ZIP users to extract
+first. A ZIP upload alone is not a guarantee that functions will be deployed.
+If your dashboard only offers static publishing, use a source-project upload
+flow that runs the build; this archive cannot add server execution to a static
+upload. No live Netlify deployment is claimed by this package.
+
+Official instructions:
+https://docs.netlify.com/deploy/create-deploys/#drag-and-drop
+
+## Play
+
+- 2–8 players, five rounds by default.
+- Draw your phrase for 60 seconds. Shuffle has a one-second cooldown.
+- The action always stays fixed. During 30 seconds, keep the phrase or change
+  the character, object, or both. Underlined parts open searchable family pickers.
+- Vote Truth or Lie on the other drawings during 60 seconds.
+- Correct vote: +500. A Truth vote on your drawing: +300, even if you lied.
+- Submit/Unsubmit, readiness, host controls, leaving, and shared ties are retained.
+- Skipping drawing still allows voting. Empty claims use the original phrase.
+
+## How this edition works
+
+```mermaid
+flowchart LR
+  A[Browser: existing drawing UI] -->|Short requests and polling| B[Netlify Function: game.ts]
+  B --> C[Load room with strong consistency]
+  C --> D[Validate identity, deadlines, actions and scores]
+  D --> E[Conditional room write with ETag]
+  E -->|Conflict: reload and retry| C
+  E -->|Committed private player view| A
+```
+
+The frontend calls `/.netlify/functions/game` directly. There is no `/api/game`
+redirect, custom function path, SSE connection, or continuously running deployed
+server. All helpers stay outside `netlify/functions`; `game.ts` is its only file.
+Polling also provides presence heartbeats. Deadlines are stored and reconciled
+on requests, so no background interval needs to remain alive. Inactive rooms
+logically expire after six hours; expired records currently remain in Blobs
+storage and may count toward its storage allowance.
+
+Each room is a single aggregate including scores and a bounded request-receipt
+list. Strong reads obtain its value and ETag together. Creation uses `onlyIfNew`;
+updates use `onlyIfMatch`. Conflicts retry from a new read, and a missing ETag
+fails closed. Private prompts, tokens, and other players' drafts never appear
+in public views. Do not grant browsers direct access to the room store.
+
+This follows the explicitly requested single-blob conditional-write design.
+Netlify recommends a transactional database for transactional data; Blobs does
+not provide multi-key transactions. Cross-room transactions are not used here.
+For production expansion, revisit storage architecture rather than assuming
+this is a general database replacement.
+https://www.netlify.com/knowledge-base/how-to-store-files-and-objects-with-netlify-blobs/
+
+## Library and artwork
+
+`game/vocabulary.mjs` contains 174 characters in 37 visual families, 34 actions
+in 6 families, and 287 objects in 61 families. IDs remain stable. All artwork,
+custom font assets, and their original source sheets are included.
+See `LETTERING.md` for the artwork conventions and optional rebuild workflow.
+
+## Verification and package contents
+
+The automated suite exercises a complete three-round, two-player game with
+scoring and a final winner; concurrent submissions; retry receipts; expired
+deadlines; private views; and unchanged game rules. A separate test extracts
+Netlify's actual packaged function and completes its default five-round game
+using the real Blobs SDK against the local emulator. The emulator's missing
+GET ETag is bridged in development only, and emulator calls are serialized;
+concurrency is tested separately against an atomic conditional-write model.
+A hosted Netlify test is still required to verify real platform behavior.
+
+- `netlify.toml`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`:
+  reproducible configuration and dependency installation.
+- `web/`: complete frontend source; `dist/`: built browser assets only.
+- `netlify/functions/game.ts`: the single deployed function.
+- `game/`: rules, vocabulary, persistence and HTTP handling.
+- `tests/`: regression and integration tests.
+- `verification/game.zip`: portable prepackaged function for inspection.
+- `tools/`: build, packaging, and local development helpers.
+- `assets/`: original lettering and artwork sources.
+
+The prepackaged function is evidence of the verified build, not a workaround
+for static Drop. The logged-in source build packages the function on Netlify.
+Free-tier usage limits apply to hosting and Blobs. No hosted accounts or player
+accounts are created by this archive.
+
+## Optional developer workflow
+
+These commands are for development and are not required for browser publishing:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm build
+pnpm test
+pnpm start
+pnpm package
+```
+
+Node 22.12 or newer is required. `server.mjs` is a local-only preview adapter;
+it is not deployed. Local state lives in ignored `.netlify/blobs`. Production
+state lives in the site's Blobs store. The build prebundles the function before
+using Netlify's official packager, avoiding machine-specific package symlinks.

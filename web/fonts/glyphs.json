@@ -1,0 +1,272 @@
+{
+  ".": {
+    "sheet": "xyz..png",
+    "bounds": [
+      970,
+      676,
+      66,
+      81
+    ],
+    "advance": 162
+  },
+  "A": {
+    "sheet": "abc.png",
+    "bounds": [
+      576,
+      8,
+      480,
+      525
+    ],
+    "advance": 837
+  },
+  "B": {
+    "sheet": "abc.png",
+    "bounds": [
+      1253,
+      35,
+      239,
+      445
+    ],
+    "advance": 517
+  },
+  "C": {
+    "sheet": "abc.png",
+    "bounds": [
+      152,
+      86,
+      277,
+      481
+    ],
+    "advance": 550
+  },
+  "D": {
+    "sheet": "def.png",
+    "bounds": [
+      132,
+      87,
+      338,
+      550
+    ],
+    "advance": 582
+  },
+  "E": {
+    "sheet": "def.png",
+    "bounds": [
+      617,
+      104,
+      232,
+      545
+    ],
+    "advance": 422
+  },
+  "F": {
+    "sheet": "def.png",
+    "bounds": [
+      1114,
+      92,
+      239,
+      533
+    ],
+    "advance": 441
+  },
+  "G": {
+    "sheet": "ghi.png",
+    "bounds": [
+      208,
+      121,
+      319,
+      453
+    ],
+    "advance": 659
+  },
+  "H": {
+    "sheet": "ghi.png",
+    "bounds": [
+      648,
+      85,
+      310,
+      508
+    ],
+    "advance": 579
+  },
+  "I": {
+    "sheet": "ghi.png",
+    "bounds": [
+      1159,
+      81,
+      318,
+      507
+    ],
+    "advance": 593
+  },
+  "J": {
+    "sheet": "jkl.png",
+    "bounds": [
+      118,
+      64,
+      421,
+      602
+    ],
+    "advance": 654
+  },
+  "K": {
+    "sheet": "jkl.png",
+    "bounds": [
+      666,
+      71,
+      421,
+      587
+    ],
+    "advance": 670
+  },
+  "L": {
+    "sheet": "jkl.png",
+    "bounds": [
+      1256,
+      65,
+      299,
+      596
+    ],
+    "advance": 486
+  },
+  "M": {
+    "sheet": "mno.png",
+    "bounds": [
+      160,
+      118,
+      567,
+      467
+    ],
+    "advance": 1092
+  },
+  "N": {
+    "sheet": "mno.png",
+    "bounds": [
+      858,
+      107,
+      439,
+      460
+    ],
+    "advance": 871
+  },
+  "O": {
+    "sheet": "mno.png",
+    "bounds": [
+      1315,
+      119,
+      343,
+      528
+    ],
+    "advance": 612
+  },
+  "P": {
+    "sheet": "pqr.png",
+    "bounds": [
+      363,
+      103,
+      350,
+      608
+    ],
+    "advance": 549
+  },
+  "Q": {
+    "sheet": "pqr.png",
+    "bounds": [
+      827,
+      118,
+      380,
+      569
+    ],
+    "advance": 628
+  },
+  "R": {
+    "sheet": "pqr.png",
+    "bounds": [
+      1358,
+      128,
+      388,
+      556
+    ],
+    "advance": 653
+  },
+  "S": {
+    "sheet": "stu.png",
+    "bounds": [
+      421,
+      88,
+      365,
+      511
+    ],
+    "advance": 667
+  },
+  "T": {
+    "sheet": "stu.png",
+    "bounds": [
+      925,
+      92,
+      354,
+      509
+    ],
+    "advance": 651
+  },
+  "U": {
+    "sheet": "stu.png",
+    "bounds": [
+      1427,
+      79,
+      377,
+      522
+    ],
+    "advance": 674
+  },
+  "V": {
+    "sheet": "vw.png",
+    "bounds": [
+      166,
+      109,
+      612,
+      493
+    ],
+    "advance": 1115
+  },
+  "W": {
+    "sheet": "vw.png",
+    "bounds": [
+      927,
+      107,
+      709,
+      488
+    ],
+    "advance": 1295
+  },
+  "X": {
+    "sheet": "xyz..png",
+    "bounds": [
+      103,
+      98,
+      405,
+      434
+    ],
+    "advance": 853
+  },
+  "Y": {
+    "sheet": "xyz..png",
+    "bounds": [
+      599,
+      108,
+      450,
+      531
+    ],
+    "advance": 780
+  },
+  "Z": {
+    "sheet": "xyz..png",
+    "bounds": [
+      1250,
+      127,
+      500,
+      560
+    ],
+    "advance": 819
+  }
+}

@@ -1,0 +1,9 @@
+/node_modules/
+/server-output.log
+/server-error.log
+/.venv/
+__pycache__/
+/dist/
+/.netlify/
+/netlify-ready-game.zip
+/verification/
