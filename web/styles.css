@@ -307,37 +307,50 @@ body.picker-open { position: fixed; width: 100%; overflow: hidden; }
   .footer-actions { gap: 10px; }
   .panel { padding: 20px; }
 }
-/* Short landscape screens keep the canvas and every drawing control together. */
-@media (orientation: landscape) and (max-height: 500px) and (min-width: 621px) {
-  body:has(.phase-draw) #app { padding: 6px max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left)); }
-  body:has(.phase-draw) .room-bar { margin-bottom: 6px; padding-bottom: 4px; min-height: 36px; }
-  body:has(.phase-draw) .room-brand { display: none; }
-  body:has(.phase-draw) .room-bar button { min-height: 32px; padding-block: 3px; }
+/* Landscape dedicates the full left column to drawing; controls share a side rail. */
+@media (orientation: landscape) and (max-height: 500px) and (min-width: 480px) {
+  body:has(.phase-draw) #app { position: relative; max-width: none; padding: 6px max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left)); }
+  body:has(.phase-draw) .room-bar { position: absolute; z-index: 1; top: 6px; right: max(12px, env(safe-area-inset-right)); width: 200px; margin: 0; padding: 0; border: 0; }
+  body:has(.phase-draw) .site-header, body:has(.phase-draw) .room-brand, body:has(.phase-draw) .room-code, body:has(.phase-draw) [data-action="copy-code"] { display: none; }
+  body:has(.phase-draw) .room-bar .inline { display: flex; justify-content: space-between; gap: 0; }
+  body:has(.phase-draw) .room-bar button { min-height: 32px; padding: 4px; font-size: 11px; }
   .phase-draw .player-strip { display: none; }
-  .phase-draw #stage { height: calc(100dvh - 60px - env(safe-area-inset-bottom)); grid-template-columns: minmax(0, 1fr) 240px; grid-template-rows: 44px minmax(0, 1fr) 40px; gap: 6px 14px; }
-  .phase-draw .assigned-prompt { grid-column: 1; grid-row: 1; margin: 0; font-size: 16px; gap: 8px; line-height: 1.2; }
-  .phase-draw .stage-top { grid-column: 2; grid-row: 1; margin: 0; }
+  .phase-draw #stage { display: grid; height: calc(100dvh - 12px - env(safe-area-inset-bottom)); grid-template-columns: minmax(0, 1fr) 200px; grid-template-rows: 32px 28px auto minmax(0, 1fr) 36px; gap: 6px 12px; }
+  .phase-draw .assigned-prompt { grid-column: 2; grid-row: 3; margin: 0; font-size: 13px; gap: 4px; line-height: 1.25; }
+  .phase-draw .shuffle-prompt { width: 32px; height: 36px; min-height: 36px; padding: 4px; }
+  .phase-draw .stage-top { grid-column: 2; grid-row: 2; margin: 0; }
   .phase-draw .phase-heading h1, .phase-draw .phase-hint { display: none; }
-  .phase-draw .timer { font-size: 21px; padding-left: 10px; }
-  .phase-draw .drawing-workspace { grid-column: 1; grid-row: 2; min-height: 0; height: 100%; display: flex; justify-content: center; align-items: center; }
-  .phase-draw .canvas-wrap { width: min(100%, calc((100dvh - 166px - env(safe-area-inset-bottom)) * 1.6)); }
-  .phase-draw .drawing-controls { grid-column: 2; grid-row: 2; padding: 6px; min-height: 0; }
+  .phase-draw .timer { font-size: 21px; padding: 0 0 0 10px; }
+  .phase-draw .drawing-workspace { grid-column: 1; grid-row: 1 / -1; min-height: 0; height: 100%; display: flex; justify-content: center; align-items: center; }
+  .phase-draw .canvas-wrap { width: min(100%, calc((100dvh - 14px - env(safe-area-inset-bottom)) * 1.6)); }
+  .phase-draw .drawing-controls { display: block; margin-top: 0; grid-column: 2; grid-row: 4; padding: 6px; min-height: 0; }
   .phase-draw .tool-rail { margin-bottom: 8px; }
   .phase-draw .drawing-tool { min-height: 42px; padding: 2px; gap: 0; font-size: 9px; }
   .phase-draw .drawing-tool svg { width: 20px; height: 20px; }
   .phase-draw .tools { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 9px 5px; margin-bottom: 8px; padding: 3px; }
   .phase-draw .swatch { width: 24px; height: 24px; }
   .phase-draw .brush-controls { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .phase-draw .brush-controls label { font-size: 11px; }
+  .phase-draw .brush-controls label { font-size: 10px; }
+  .phase-draw .brush-controls output { font-size: 10px; }
   .phase-draw .brush-preview { display: none; }
-  .phase-draw .drawing-footer { grid-column: 1 / -1; grid-row: 3; margin: 0; padding: 0; }
-  .phase-draw .drawing-footer button { min-height: 36px; padding: 5px 14px; width: 140px; }
+  .phase-draw .drawing-footer { grid-column: 2; grid-row: 5; margin: 0; padding: 0; gap: 4px; flex-wrap: nowrap; }
+  .phase-draw .drawing-footer p { font-size: 10px; }
+  .phase-draw .drawing-footer button { min-height: 36px; padding: 5px 10px; width: 116px; }
   .phase-draw .locked-notice { font-size: 14px; }
 }
-@media (orientation: landscape) and (max-height: 360px) and (min-width: 621px) {
+@media (orientation: landscape) and (max-height: 360px) and (min-width: 480px) {
+  .phase-draw #stage { grid-template-rows: 28px 24px auto minmax(0, 1fr) 36px; row-gap: 4px; }
+  body:has(.phase-draw) .room-bar button { min-height: 28px; padding-block: 2px; }
+  .phase-draw .assigned-prompt { font-size: 12px; line-height: 1.2; }
   .phase-draw .tool-rail { margin-bottom: 4px; }
   .phase-draw .drawing-tool { min-height: 36px; }
   .phase-draw .tools { gap: 6px 5px; margin-bottom: 4px; }
+}
+@media (orientation: landscape) and (max-height: 500px) and (min-width: 480px) and (max-width: 620px) {
+  body:has(.phase-draw) .room-bar { width: 180px; }
+  .phase-draw #stage { grid-template-columns: minmax(0, 1fr) 180px; }
+  .phase-draw .swatch { width: 22px; height: 22px; }
+  .phase-draw .drawing-footer button { width: 100px; }
 }
 /* Hover changes only the surface. Selection borders and focus outlines persist. */
 @media (hover: hover) {
