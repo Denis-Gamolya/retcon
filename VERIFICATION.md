@@ -16,11 +16,12 @@ Verified locally and on the existing Netlify project on October 20, 2026.
 
 ## Local verification
 
-- Landscape dedicates the left column's full height to the canvas, with the
-  prompt, timer, tools, and submission control in the right rail. At 844×390,
-  the canvas measures approximately 591×370, versus 342×214 in 390×844 portrait.
-  At 667×320 and 568×320, the canvas measures 414×259 and 335×210 respectively;
-  the sliders and Submit stay visible without page scrolling.
+- Landscape places the prompt and shuffle below the canvas, with the timer,
+  tools, and submission control in a separate right rail. At 844×390, the
+  canvas measures approximately 521×325, versus 342×214 in 390×844 portrait;
+  the right rail is 240 pixels wide. At 667×320, the canvas measures 374×234.
+  Checks at 844×390, 667×320, and 568×320 keep the prompt, sliders, and Submit
+  visible without page scrolling.
 - At 390×700, the modal picker scrolls its own family list while the background
   stays fixed. Choosing a searched replacement closes it, restores the previous
   page scroll position, and removes the scroll lock. Rotation to landscape also
