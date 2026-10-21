@@ -184,12 +184,20 @@ canvas.drawing { touch-action: none; cursor: crosshair; }
 .picker-words .word-button { min-height: 44px; text-align: left; overflow-wrap: anywhere; }
 .picker-pages { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; font-size: 12px; }
 .picker-pages button { min-width: 44px; min-height: 44px; padding: 8px; }
-@media (max-width: 620px) {
-  .word-picker[open] { position: fixed; inset: auto 0 0; margin: 0; width: 100%; max-height: 75dvh; max-width: none; padding: 16px 20px max(20px, env(safe-area-inset-bottom)); overflow-y: auto; border-bottom: 0; border-radius: 10px 10px 0 0; box-shadow: 0 -8px 32px #27262020; }
+body.picker-open { position: fixed; width: 100%; overflow: hidden; }
+@media (max-width: 620px), (max-height: 500px) and (orientation: landscape) {
+  .word-picker[open] { position: fixed; inset: 12px; margin: 0; width: calc(100% - 24px); height: calc(100dvh - 24px); max-height: none; max-width: none; padding: 16px; display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; box-shadow: 0 8px 32px #27262030; }
   .word-picker::backdrop { background: #27262045; }
-  .word-picker .search { font-size: 16px; }
-  .picker-context { display: block; margin: 0 0 16px; font-size: 16px; }
+  .word-picker .search { font-size: 16px; flex-shrink: 0; }
+  .picker-heading { flex-shrink: 0; margin-bottom: 8px; }
+  .picker-close { border-color: transparent; }
+  .picker-close:focus:not(:focus-visible) { outline: none; }
+  .picker-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; padding: 0 2px max(12px, env(safe-area-inset-bottom)); }
+  #picker-families { max-height: none; overflow: visible; }
+  .picker-context { display: block; flex-shrink: 0; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
   .picker-context span { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; }
+  .picker-words { gap: 6px; }
+  .picker-words .word-button { padding: 10px; font-size: 14px; }
 }
 .search { font-size: 13px; padding: 8px 10px; min-height: 40px; margin-bottom: 8px; }
 .word-button { min-height: 38px; border: 1px solid #c4bca9; padding: 7px 10px; background: transparent; color: var(--text); font-size: 13px; border-radius: 2px; }
@@ -298,6 +306,38 @@ canvas.drawing { touch-action: none; cursor: crosshair; }
   .drawing-footer button { width: 180px; }
   .footer-actions { gap: 10px; }
   .panel { padding: 20px; }
+}
+/* Short landscape screens keep the canvas and every drawing control together. */
+@media (orientation: landscape) and (max-height: 500px) and (min-width: 621px) {
+  body:has(.phase-draw) #app { padding: 6px max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left)); }
+  body:has(.phase-draw) .room-bar { margin-bottom: 6px; padding-bottom: 4px; min-height: 36px; }
+  body:has(.phase-draw) .room-brand { display: none; }
+  body:has(.phase-draw) .room-bar button { min-height: 32px; padding-block: 3px; }
+  .phase-draw .player-strip { display: none; }
+  .phase-draw #stage { height: calc(100dvh - 60px - env(safe-area-inset-bottom)); grid-template-columns: minmax(0, 1fr) 240px; grid-template-rows: 44px minmax(0, 1fr) 40px; gap: 6px 14px; }
+  .phase-draw .assigned-prompt { grid-column: 1; grid-row: 1; margin: 0; font-size: 16px; gap: 8px; line-height: 1.2; }
+  .phase-draw .stage-top { grid-column: 2; grid-row: 1; margin: 0; }
+  .phase-draw .phase-heading h1, .phase-draw .phase-hint { display: none; }
+  .phase-draw .timer { font-size: 21px; padding-left: 10px; }
+  .phase-draw .drawing-workspace { grid-column: 1; grid-row: 2; min-height: 0; height: 100%; display: flex; justify-content: center; align-items: center; }
+  .phase-draw .canvas-wrap { width: min(100%, calc((100dvh - 166px - env(safe-area-inset-bottom)) * 1.6)); }
+  .phase-draw .drawing-controls { grid-column: 2; grid-row: 2; padding: 6px; min-height: 0; }
+  .phase-draw .tool-rail { margin-bottom: 8px; }
+  .phase-draw .drawing-tool { min-height: 42px; padding: 2px; gap: 0; font-size: 9px; }
+  .phase-draw .drawing-tool svg { width: 20px; height: 20px; }
+  .phase-draw .tools { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 9px 5px; margin-bottom: 8px; padding: 3px; }
+  .phase-draw .swatch { width: 24px; height: 24px; }
+  .phase-draw .brush-controls { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .phase-draw .brush-controls label { font-size: 11px; }
+  .phase-draw .brush-preview { display: none; }
+  .phase-draw .drawing-footer { grid-column: 1 / -1; grid-row: 3; margin: 0; padding: 0; }
+  .phase-draw .drawing-footer button { min-height: 36px; padding: 5px 14px; width: 140px; }
+  .phase-draw .locked-notice { font-size: 14px; }
+}
+@media (orientation: landscape) and (max-height: 360px) and (min-width: 621px) {
+  .phase-draw .tool-rail { margin-bottom: 4px; }
+  .phase-draw .drawing-tool { min-height: 36px; }
+  .phase-draw .tools { gap: 6px 5px; margin-bottom: 4px; }
 }
 /* Hover changes only the surface. Selection borders and focus outlines persist. */
 @media (hover: hover) {

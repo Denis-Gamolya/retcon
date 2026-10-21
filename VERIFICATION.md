@@ -16,6 +16,14 @@ Verified locally and on the existing Netlify project on October 20, 2026.
 
 ## Local verification
 
+- Mobile layout regression check: 844×390 and 667×320 landscape keep the
+  prompt, canvas, tools, both sliders, and submission control inside the viewport.
+- At 390×700, the modal picker scrolls its own family list while the background
+  stays fixed. Choosing a searched replacement closes it, restores the previous
+  page scroll position, and removes the scroll lock. Rotation to landscape also
+  keeps the dialog within the viewport. These are browser viewport checks;
+  physical iOS browser and on-screen keyboard behavior still need device testing.
+
 - Production frontend build and official Netlify function packaging passed.
 - All 41 automated tests passed.
 - Three-round two-player integration game: host 2,400, guest 900; host wins.

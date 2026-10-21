@@ -14,6 +14,8 @@ let roomCodeVisible = false;
 let strokes = [];
 let claim = null;
 let activePicker = null;
+let pickerScrollPosition = null;
+const modalPickerQuery = matchMedia('(max-width: 620px), (max-height: 500px) and (orientation: landscape)');
 let penColor = colors[0];
 let penWidth = 4;
 let drawingTool = 'pencil';
@@ -109,6 +111,7 @@ function rules() {
 }
 
 function renderHome() {
+  closeWordPicker(false);
   stageKey = '';
   roomCodeVisible = false;
   const invite = new URL(location.href).searchParams.get('room') ?? '';
@@ -301,8 +304,9 @@ function renderStage() {
           <div class="picker-heading"><strong id="picker-title"></strong><button class="secondary picker-close" data-action="close-picker" aria-label="Close word picker">×</button></div>
           <p id="picker-context" class="picker-context"></p>
           <input id="picker-search" class="search" type="search" aria-label="Search words" autocomplete="off">
-          <details class="picker-families"><summary>Browse families</summary><div id="picker-families"></div></details>
+          <div class="picker-body"><details class="picker-families"><summary>Browse families</summary><div id="picker-families"></div></details>
           <div id="picker-results"></div>
+          </div>
         </dialog>
       </div>`}</div><div class="footer-actions">${readyMarkup()}</div>`;
     paint(document.querySelector('#claim-canvas'), state.me.strokes);
@@ -344,9 +348,15 @@ function closeWordPicker(restoreFocus = true) {
   const slot = activePicker?.slot;
   const dialog = document.querySelector('#word-picker');
   if (dialog?.open) dialog.close();
+  if (pickerScrollPosition !== null) {
+    document.body.classList.remove('picker-open');
+    document.body.style.removeProperty('top');
+    window.scrollTo(0, pickerScrollPosition);
+    pickerScrollPosition = null;
+  }
   activePicker = null;
   document.querySelectorAll('[data-edit-slot]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
-  if (restoreFocus && slot) document.querySelector(`[data-edit-slot="${slot}"]`)?.focus();
+  if (restoreFocus && slot) document.querySelector(`[data-edit-slot="${slot}"]`)?.focus({ preventScroll: true });
 }
 
 function openWordPicker(slot) {
@@ -367,9 +377,18 @@ function openWordPicker(slot) {
     .map((family) => `<button class="word-button" data-family="${escape(family)}">${escape(family)}</button>`).join('');
   renderPickerResults();
   document.querySelector(`[data-edit-slot="${slot}"]`).setAttribute('aria-expanded', 'true');
-  if (matchMedia('(max-width: 620px)').matches) dialog.showModal();
-  else dialog.show();
-  if (matchMedia('(min-width: 621px)').matches) search.focus();
+  if (modalPickerQuery.matches) {
+    // Fixed positioning also prevents background rubber-banding on iOS.
+    pickerScrollPosition = window.scrollY;
+    document.body.style.top = `-${pickerScrollPosition}px`;
+    document.body.classList.add('picker-open');
+    dialog.showModal();
+    dialog.querySelector('.picker-body').scrollTop = 0;
+    dialog.querySelector('.picker-close').focus({ preventScroll: true });
+  } else {
+    dialog.show();
+    search.focus();
+  }
 }
 
 function renderPickerResults() {
@@ -728,4 +747,4 @@ document.addEventListener('click', (event) => {
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeWordPicker();
   }
 }, true);
-matchMedia('(max-width: 620px)').addEventListener('change', () => closeWordPicker());
+modalPickerQuery.addEventListener('change', () => closeWordPicker());
