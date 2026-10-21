@@ -16,6 +16,11 @@ and the functions directory is `netlify/functions`. Leave the base directory
 at the repository root. The committed lockfile and package-manager version
 control dependency installation.
 
+This project's private repository is
+https://github.com/Denis-Gamolya/sketchy-alibis and its public game is
+https://candid-crisp-9ad27c.netlify.app/. The repository is connected to the
+existing Netlify project with automatic production publishing from `main`.
+
 After changes are tested and pushed to `main`, Netlify builds and publishes
 them at the existing project URL. Local edits alone do not deploy. No new ZIP
 is needed for this workflow. Schedule gameplay or storage changes between
@@ -105,7 +110,8 @@ Netlify's actual packaged function and completes its default five-round game
 using the real Blobs SDK against the local emulator. The emulator's missing
 GET ETag is bridged in development only, and emulator calls are serialized;
 concurrency is tested separately against an atomic conditional-write model.
-A hosted Netlify test is still required to verify real platform behavior.
+A hosted build, public access, room creation, joining, and game start were
+verified separately. See `VERIFICATION.md` for the scope of those checks.
 
 - `netlify.toml`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`:
   reproducible configuration and dependency installation.

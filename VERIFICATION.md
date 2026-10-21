@@ -1,6 +1,20 @@
 # Netlify edition verification
 
-Verified locally on October 20, 2026. No Netlify project was created or deployed.
+Verified locally and on the existing Netlify project on October 20, 2026.
+
+## Hosted deployment
+
+- Private source repository: https://github.com/Denis-Gamolya/sketchy-alibis
+- Public game: https://candid-crisp-9ad27c.netlify.app/
+- Production branch: `main`; automatic publishing is enabled.
+- Initial Git build `e1201f5` published successfully with one deployed function.
+- The production page returned HTTP 200 without authentication.
+- Two browser sessions created and joined one room, then both entered the
+  drawing phase with separate prompts and synchronized player lists.
+- Both test players left afterward. This hosted smoke check does not replace
+  the complete local games below or establish cloud concurrency limits.
+
+## Local verification
 
 - Production frontend build and official Netlify function packaging passed.
 - All 41 automated tests passed.
@@ -24,8 +38,8 @@ The official file-backed Blobs emulator omits ETags on GET and does not fully
 serialize conditional writes. The local preview/test bridge obtains ETags
 from its listing endpoint and serializes calls. That bridge is not part of
 the deployed function. Production uses Netlify's strong value/ETag reads and
-conditional updates directly. Live cloud concurrency and upload/build behavior
-remain unverified until the extracted project is deployed to a Netlify account.
+conditional updates directly. Live cloud concurrency limits remain unverified;
+the Git-based cloud build and basic multiplayer flow were checked above.
 
 Publishing requires the logged-in source-project build upload flow. Static-only
 Drop cannot deploy this backend. Netlify's documentation instructs users with a
