@@ -1,5 +1,5 @@
 import { randomBytes, randomInt, randomUUID } from 'node:crypto';
-import { isTruth, slots, validateClaim, vocabulary } from './vocabulary.mjs';
+import { isTruth, promptChoices, slots, validateClaim, vocabulary } from './vocabulary.mjs';
 
 export const timing = { draw: 60_000, claim: 30_000, judge: 60_000 };
 export const palette = ['#172033', '#e53935', '#ef9b24', '#f4d438', '#13816a', '#24bfd1', '#3478e5', '#7057ff', '#ee5b75', '#915c38', '#ffffff'];
@@ -75,7 +75,9 @@ export class GameEngine {
     } while (this.rooms.has(code));
     const room = {
       code, phase: 'lobby', gameId: null, round: 0, deadline: null, players: [],
-      hostId: null, usedPrompts: [], history: [], version: 0, updatedAt: this.now(),
+      hostId: null, usedPrompts: [], recentWords: { character: [], object: [] },
+      settings: { rounds: this.totalRounds, drawSeconds: this.durations.draw / 1000, wordPool: 'all', revealMode: 'all' },
+      history: [], version: 0, updatedAt: this.now(),
     };
     this.rooms.set(code, room);
     const result = this.join(code, name);
@@ -97,7 +99,7 @@ export class GameEngine {
     assert(!room.players.some((player) => player.name.toLowerCase() === cleanName.toLowerCase()), 'That nickname is already in use in this room.');
     const player = {
       id: randomUUID(), token: randomBytes(32).toString('hex'), name: cleanName,
-      score: 0, connected: false, lastSeen: this.now(), entry: null,
+      score: 0, connected: false, lastSeen: this.now(), entry: null, avatar: [],
     };
     room.players.push(player);
     if (!room.hostId) room.hostId = player.id;
@@ -142,6 +144,7 @@ export class GameEngine {
     room.players.forEach((member) => { member.score = 0; });
     room.history = [];
     room.usedPrompts = [];
+    room.recentWords = { character: [], object: [] };
     room.gameId = randomUUID();
     room.round = 0;
     this.beginRound(room);
@@ -150,21 +153,50 @@ export class GameEngine {
   beginRound(room) {
     room.round += 1;
     room.phase = 'draw';
-    room.deadline = this.now() + this.durations.draw;
+    room.deadline = this.now() + (room.settings?.drawSeconds * 1000 || this.durations.draw);
     for (const player of room.players) {
-      let original;
-      let key;
-      do {
-        original = Object.fromEntries(slots.map((slot) => [slot, vocabulary[slot][randomInt(vocabulary[slot].length)].id]));
-        key = JSON.stringify(original);
-      } while (room.usedPrompts.includes(key));
-      room.usedPrompts.push(key);
+      const original = this.pickPrompt(room);
       player.entry = {
         original, claim: { ...original }, lockedSlot: null, strokes: [],
         drawingDone: false, claimDone: false, votesDone: false,
         votes: {}, active: false, rerollReadyAt: 0,
       };
     }
+    this.touch(room);
+  }
+
+  /** Prefer unused character/object terms, then relax recency without repeating a phrase. */
+  pickPrompt(room) {
+    room.recentWords ??= { character: [], object: [] };
+    for (let attempt = 0; attempt < 256; attempt++) {
+      const original = Object.fromEntries(slots.map((slot) => {
+        const words = promptChoices(slot, room.settings?.wordPool);
+        const recent = room.recentWords[slot] ?? [];
+        const fresh = words.filter((word) => !recent.includes(word.id));
+        const choices = attempt < 64 && fresh.length ? fresh : words;
+        return [slot, choices[randomInt(choices.length)].id];
+      }));
+      const key = JSON.stringify(original);
+      if (room.usedPrompts.includes(key)) continue;
+      room.usedPrompts.push(key);
+      for (const slot of ['character', 'object']) {
+        const limit = Math.min(16, promptChoices(slot, room.settings?.wordPool).length - 1);
+        room.recentWords[slot] = [...room.recentWords[slot], original[slot]].slice(-limit);
+      }
+      return original;
+    }
+    throw new Error('Could not find a fresh prompt. Try shuffling again.');
+  }
+
+  /** Validate partial lobby settings; active games retain their selected rules. */
+  changeSettings(room, player, changes) {
+    assert(room.phase === 'lobby' && room.hostId === player.id, 'Only the host can change settings in the lobby.');
+    assert(changes && typeof changes === 'object' && !Array.isArray(changes), 'Choose game settings.');
+    const options = { rounds: [3, 5], drawSeconds: [30, 60, 90, 120], wordPool: ['all', 'familiar'], revealMode: ['all', 'guided'] };
+    for (const [key, value] of Object.entries(changes)) {
+      assert(options[key]?.includes(value), 'Choose a supported setting.');
+    }
+    room.settings = { rounds: this.totalRounds, drawSeconds: this.durations.draw / 1000, wordPool: 'all', revealMode: 'all', ...room.settings, ...changes };
     this.touch(room);
   }
 
@@ -215,11 +247,31 @@ export class GameEngine {
 
   action(room, player, action, payload = {}) {
     this.tick(room);
+    if (action === 'settings') return this.changeSettings(room, player, payload.settings);
+    if (action === 'avatar') {
+      assert(room.phase === 'lobby', 'Edit your portrait in the lobby.');
+      assert(Array.isArray(payload.strokes) && payload.strokes.length <= 60, 'Use at most 60 portrait strokes.');
+      const avatar = validateDrawing(payload.strokes);
+      assert(avatar.every((stroke) => !stroke.type) && avatar.reduce((count, stroke) => count + stroke.points.length, 0) <= 1500, 'Portraits support up to 1,500 pen points.');
+      player.avatar = avatar;
+      this.touch(room);
+      return;
+    }
     if (action === 'start') return this.start(room, player);
+    if (action === 'reveal-next') {
+      assert(room.hostId === player.id && room.phase === 'reveal' && room.settings?.revealMode === 'guided', 'Only the host can reveal this drawing.');
+      assert(payload.round === room.round && (!payload.gameId || payload.gameId === room.gameId), 'This reveal belongs to a previous round.');
+      const lastStep = Math.max(0, room.history.at(-1).entries.length * 3 - 1);
+      assert(payload.step === room.revealStep, 'This drawing has already been revealed.');
+      room.revealStep = Math.min(lastStep, room.revealStep + 1);
+      this.touch(room);
+      return;
+    }
     if (action === 'next') {
       assert(room.hostId === player.id, 'Only the host can continue.');
       assert(room.phase === 'reveal', 'Finish this round first.');
-      if (room.round < this.totalRounds) this.beginRound(room);
+      assert(room.settings?.revealMode !== 'guided' || room.revealStep >= Math.max(0, room.history.at(-1).entries.length * 3 - 1), 'Reveal every drawing first.');
+      if (room.round < (room.settings?.rounds ?? this.totalRounds)) this.beginRound(room);
       else {
         room.phase = 'finished';
         this.touch(room);
@@ -249,13 +301,7 @@ export class GameEngine {
       assert(room.phase === 'draw', 'Drawing time is over.');
       assert(!entry.drawingDone, 'Unlock your drawing first.');
       assert(this.now() >= entry.rerollReadyAt, 'Wait one second before shuffling again.');
-      let original;
-      let key;
-      do {
-        original = Object.fromEntries(slots.map((slot) => [slot, vocabulary[slot][randomInt(vocabulary[slot].length)].id]));
-        key = JSON.stringify(original);
-      } while (room.usedPrompts.includes(key));
-      room.usedPrompts.push(key);
+      const original = this.pickPrompt(room);
       entry.original = original;
       entry.claim = { ...original };
       entry.rerollReadyAt = this.now() + 1000;
@@ -278,7 +324,9 @@ export class GameEngine {
       assert(room.phase === 'claim', 'Prompt editing time is over.');
       assert(entry.active, 'There is no drawing to judge this round.');
       assert(!entry.claimDone, 'Your claim is already locked.');
-      entry.claim = validateClaim(entry.original, payload.claim, entry.lockedSlot);
+      const claim = validateClaim(entry.original, payload.claim, entry.lockedSlot);
+      assert(slots.every((slot) => promptChoices(slot, room.settings?.wordPool).some((word) => word.id === claim[slot])), 'Choose words from this room’s library.');
+      entry.claim = claim;
       entry.claimDone = true;
     } else if (action === 'vote') {
       assert(room.phase === 'judge', 'Judging time is over.');
@@ -316,6 +364,7 @@ export class GameEngine {
     });
     for (const player of room.players) player.score += gains[player.id].judging + gains[player.id].belief;
     room.history.push({ round: room.round, entries, gains });
+    room.revealStep = 0;
     room.phase = 'reveal';
     room.deadline = null;
     this.touch(room);
@@ -335,11 +384,13 @@ export class GameEngine {
     const entry = player.entry;
     const showGallery = ['judge', 'reveal', 'finished'].includes(room.phase);
     return {
-      code: room.code, gameId: room.gameId, phase: room.phase, round: room.round, totalRounds: this.totalRounds,
+      code: room.code, gameId: room.gameId, phase: room.phase, round: room.round, totalRounds: room.settings?.rounds ?? this.totalRounds,
+      settings: room.settings ?? { rounds: this.totalRounds, drawSeconds: this.durations.draw / 1000, wordPool: 'all', revealMode: 'all' },
+      revealStep: room.revealStep ?? 0,
       deadline: room.deadline, serverTime: this.now(), version: room.version,
       hostId: room.hostId, meId: player.id,
       players: room.players.map((member) => ({
-        id: member.id, name: member.name, score: member.score, connected: member.connected,
+        id: member.id, name: member.name, score: member.score, connected: member.connected, avatar: member.avatar ?? [],
         ready: room.phase === 'draw' ? member.entry?.drawingDone ?? false
           : room.phase === 'claim' ? !member.entry?.active || member.entry.claimDone
           : room.phase === 'judge' ? member.entry?.votesDone ?? false : false,

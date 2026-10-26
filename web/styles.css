@@ -130,7 +130,7 @@ button.room-code { background: transparent; border: 0; border-bottom: 1px dashed
 .phase-lobby > #stage > .panel { background: transparent; border: 0; padding: 0; }
 /* White drawing paper is separated from the cream interface by a crisp ink edge. */
 .prompt { font-size: 23px; font-weight: 600; line-height: 1.35; margin-bottom: 18px; overflow-wrap: anywhere; }
-.assigned-prompt { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 0; }
+.assigned-prompt { display: flex; justify-content: flex-start; align-items: center; gap: 10px; padding: 0; }
 .shuffle-prompt { width: 44px; height: 44px; min-height: 44px; padding: 10px; flex-shrink: 0; border-color: transparent; }
 .shuffle-prompt svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .canvas-wrap { background: #fff; border: 1px solid #a39d90; border-radius: 2px; overflow: hidden; box-shadow: 3px 4px 0 #ded7c9; }
@@ -325,7 +325,7 @@ body.picker-open { position: fixed; width: 100%; overflow: hidden; }
   .phase-draw .player-strip { display: none; }
   .phase-draw #stage { display: grid; height: calc(100dvh - 12px - env(safe-area-inset-bottom)); grid-template-columns: minmax(0, 1fr) 240px; grid-template-rows: 32px 28px minmax(0, 1fr) 44px; gap: 6px 12px; }
   .phase-draw .assigned-prompt { grid-column: 1; grid-row: 4; justify-self: center; width: min(100%, calc((100dvh - 64px - env(safe-area-inset-bottom)) * 1.6)); margin: 0; font-size: 15px; gap: 8px; line-height: 1.2; }
-  .phase-draw .assigned-prompt > span { min-width: 0; flex: 1; }
+  .phase-draw .assigned-prompt > span { min-width: 0; }
   .phase-draw .shuffle-prompt { width: 44px; height: 44px; min-height: 44px; padding: 8px; }
   .phase-draw .stage-top { grid-column: 2; grid-row: 2; margin: 0; }
   .phase-draw .phase-heading h1, .phase-draw .phase-hint { display: none; }
@@ -371,4 +371,46 @@ body.picker-open { position: fixed; width: 100%; overflow: hidden; }
 }
 @media (prefers-reduced-motion: no-preference) {
   button, summary { transition: background-color .12s; }
+}
+/* The lobby is a shared waiting room and a personal sketchpad. */
+body:has(.phase-lobby) #app { max-width: 1280px; }
+.lobby-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; margin: 26px 0 30px; }
+.lobby-heading .eyebrow { margin-bottom: 10px; }
+.lobby-heading h1 { font-size: clamp(30px, 3.6vw, 46px); margin: 0; }
+#lobby-count { color: var(--muted); white-space: nowrap; font-size: 14px; }
+.lobby-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+.lobby-invite { display: flex; align-items: center; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+.lobby-invite h2, .portrait-editor h2 { font-family: inherit; font-size: 21px; font-weight: 600; margin-bottom: 8px; }
+.invite-qr { width: 144px; height: 144px; flex-shrink: 0; background: white; }
+.invite-code { border: 0; padding: 0; background: transparent; font: 600 30px ui-monospace, monospace; letter-spacing: 4px; }
+.lobby-invite p { font-size: 13px; margin: 8px 0 12px; }
+.lobby-players { padding: 8px 0 20px; }
+.lobby-player { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.lobby-player > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.lobby-player small { display: block; color: var(--muted); margin-top: 3px; }
+.lobby-player .avatar { width: 72px; height: 54px; border-radius: 3px; font-size: 22px; }
+.avatar { overflow: hidden; }
+.avatar canvas { width: 100%; height: 100%; object-fit: contain; }
+.lobby-settings { border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+#lobby-settings-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 8px; }
+#lobby-settings-fields label { font-size: 12px; color: var(--muted); }
+#lobby-settings-fields select { margin-top: 5px; font-size: 14px; }
+.portrait-editor { position: relative; padding: 26px; box-shadow: 4px 5px 0 #e5dfd1; }
+.portrait-editor > p { font-size: 13px; margin-bottom: 20px; }
+.portrait-editor .tool-rail { grid-template-columns: repeat(4, 1fr); margin: 14px 0; }
+.portrait-editor .drawing-tool { font-size: 12px; }
+.portrait-inks { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); justify-items: center; gap: 12px 8px; padding: 5px; }
+.portrait-inks .swatch { width: 26px; height: 26px; }
+.portrait-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 24px; }
+#avatar-status { font-size: 12px; color: var(--muted); }
+.guided-gallery { max-width: 760px; margin-inline: auto; grid-template-columns: minmax(0, 1fr); }
+.reveal-progress { font-size: 13px; color: var(--muted); }
+@media (max-width: 900px) { .lobby-grid { gap: 26px; } .lobby-invite { gap: 16px; } .invite-qr { width: 112px; height: 112px; } }
+@media (max-width: 700px) {
+  .lobby-grid { grid-template-columns: minmax(0, 1fr); }
+  .lobby-heading { align-items: flex-start; margin: 18px 0 24px; }
+  .lobby-heading h1 { font-size: 30px; }
+  #lobby-count { font-size: 12px; padding-top: 4px; }
+  .portrait-editor { padding: 20px; }
+  .portrait-inks { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }

@@ -13,7 +13,8 @@
   },
   "packageManager": "pnpm@11.25.0",
   "dependencies": {
-    "@netlify/blobs": "^11.1.4"
+    "@netlify/blobs": "^11.1.4",
+    "qrcode-generator": "2.0.4"
   },
   "devDependencies": {
     "@netlify/zip-it-and-ship-it": "^16.3.1",

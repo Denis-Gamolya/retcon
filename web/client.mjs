@@ -14,6 +14,7 @@ let roomCodeVisible = false;
 let strokes = [];
 let claim = null;
 let activePicker = null;
+let avatarDirty = false;
 let pickerScrollPosition = null;
 const modalPickerQuery = matchMedia('(max-width: 620px), (max-height: 500px) and (orientation: landscape)');
 let penColor = colors[0];
@@ -187,6 +188,13 @@ function accept(next) {
   state = next;
   const nextKey = `${state.code}:${state.gameId}:${state.round}:${state.phase}`;
   if (stageKey !== nextKey) {
+    if (state.phase === 'lobby') {
+      const avatar = state.players.find((player) => player.id === state.meId)?.avatar ?? [];
+      const draft = readStored('sketchy-avatar');
+      strokes = draft?.playerId === state.meId ? draft.strokes : structuredClone(avatar);
+      redoStrokes = [];
+      avatarDirty = JSON.stringify(strokes) !== JSON.stringify(avatar);
+    }
     if (state.phase === 'draw') {
       const draft = readStored('sketchy-drawing');
       redoStrokes = [];
@@ -202,7 +210,8 @@ function accept(next) {
   } else {
     renderScores();
     updateHostControls();
-    if (state.phase === 'lobby' || state.phase === 'finished') renderStage();
+    if (state.phase === 'lobby') updateLobby();
+    else if (state.phase === 'finished' || (state.phase === 'reveal' && previous.revealStep !== state.revealStep)) renderStage();
     else if (state.phase === 'draw') {
       if (previous?.me.drawingDone !== state.me.drawingDone) renderStage();
       const prompt = document.querySelector('#assigned-prompt');
@@ -236,14 +245,58 @@ function renderScores() {
   const compact = ['draw', 'claim', 'judge'].includes(state.phase);
   const players = [...state.players].sort((first, second) => compact ? 0 : second.score - first.score);
   scoreboard.classList.toggle('player-strip', compact);
-  scoreboard.hidden = state.phase === 'lobby' || state.phase === 'finished';
+  scoreboard.hidden = state.phase === 'lobby' || state.phase === 'finished' || (state.phase === 'reveal' && state.settings?.revealMode === 'guided' && !revealComplete());
   scoreboard.innerHTML = `<h3>${compact ? 'Players' : 'Standings'}</h3>${players.map((player, index) => {
     const gain = state.result?.gains[player.id];
     const status = !player.connected ? 'Offline' : player.ready ? 'Ready' : 'Drawing';
     const phaseStatus = status === 'Drawing' ? ({ draw: 'Drawing', claim: 'Choosing', judge: 'Voting' })[state.phase] : status;
-    return `<div class="score-row ${player.ready ? 'is-ready' : ''} ${!player.connected ? 'is-offline' : ''}">${compact ? '' : `<span class="score-rank">${index + 1}</span>`}<span class="avatar" aria-hidden="true">${escape(player.name.slice(0, 1).toUpperCase())}</span><span class="score-name">${escape(player.name)}${player.id === state.meId ? '<span class="you-label">you</span>' : ''}${compact ? '' : `<small>${gain ? `+${gain.judging + gain.belief} this round` : player.id === state.hostId ? 'Host' : ''}</small>`}</span>${compact ? `<span class="presence" role="img" aria-label="${phaseStatus}">${player.ready ? '✓' : !player.connected ? '−' : '•'}</span>` : `<span class="score-value">${player.score.toLocaleString()}</span>`}</div>`;
+    return `<div class="score-row ${player.ready ? 'is-ready' : ''} ${!player.connected ? 'is-offline' : ''}">${compact ? '' : `<span class="score-rank">${index + 1}</span>`}${portraitMarkup(player)}<span class="score-name">${escape(player.name)}${player.id === state.meId ? '<span class="you-label">you</span>' : ''}${compact ? '' : `<small>${gain ? `+${gain.judging + gain.belief} this round` : player.id === state.hostId ? 'Host' : ''}</small>`}</span>${compact ? `<span class="presence" role="img" aria-label="${phaseStatus}">${player.ready ? '✓' : !player.connected ? '−' : '•'}</span>` : `<span class="score-value">${player.score.toLocaleString()}</span>`}</div>`;
   }).join('')}`;
+  paintPortraits();
 }
+
+function portraitMarkup(player) {
+  if (!player) return '';
+  return `<span class="avatar" aria-hidden="true">${player.avatar?.length ? `<canvas width="800" height="500" data-avatar="${player.id}"></canvas>` : escape(player.name.slice(0, 1).toUpperCase())}</span>`;
+}
+
+function paintPortraits() {
+  document.querySelectorAll('[data-avatar]').forEach((canvas) => {
+    paint(canvas, state.players.find((player) => player.id === canvas.dataset.avatar)?.avatar ?? []);
+  });
+}
+
+function updateLobby() {
+  const players = document.querySelector('#lobby-players');
+  if (!players) return;
+  players.innerHTML = state.players.map((player) => `<div class="lobby-player">${portraitMarkup(player)}<div><strong>${escape(player.name)}${player.id === state.meId ? ' (you)' : ''}</strong><small>${player.id === state.hostId ? 'Host · ' : ''}${player.connected ? 'Here' : 'Disconnected'}</small></div>${state.hostId === state.meId && player.id !== state.meId ? `<button class="danger small-button" data-action="remove" data-player="${player.id}" aria-label="Remove ${escape(player.name)}">Remove</button>` : ''}</div>`).join('');
+  document.querySelector('#lobby-count').textContent = `${state.players.length} / 8 players`;
+  const host = state.hostId === state.meId;
+  const canStart = state.players.length >= 2 && state.players.every((player) => player.connected);
+  const start = document.querySelector('#lobby-start');
+  start.hidden = !host;
+  start.disabled = !canStart;
+  document.querySelector('#lobby-wait').textContent = !host ? `${name(state.hostId)} will start the game.` : canStart ? 'Everyone in? Start when you’re ready.' : state.players.length < 2 ? 'Waiting for at least one more player.' : 'Waiting for players to reconnect.';
+  const settings = document.querySelector('#lobby-settings-fields');
+  if (settings.dataset.host !== state.hostId) {
+    const options = { rounds: [['3', '3 rounds'], ['5', '5 rounds']], drawSeconds: [['30', '30 seconds'], ['60', '60 seconds'], ['90', '90 seconds'], ['120', '120 seconds']], wordPool: [['all', 'Full library'], ['familiar', 'Familiar words']], revealMode: [['all', 'All at once'], ['guided', 'One drawing at a time']] };
+    const labels = { rounds: 'Game length', drawSeconds: 'Drawing time', wordPool: 'Word library', revealMode: 'Reveal' };
+    settings.innerHTML = Object.entries(options).map(([key, values]) => `<label>${labels[key]}<select aria-label="${labels[key]}" data-setting="${key}" ${host ? '' : 'disabled'}>${values.map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}</select></label>`).join('');
+    settings.dataset.host = state.hostId;
+  }
+  settings.querySelectorAll('[data-setting]').forEach((select) => {
+    if (document.activeElement !== select) select.value = String(state.settings[select.dataset.setting]);
+  });
+  document.querySelector('#avatar-status').textContent = avatarDirty ? 'Not saved' : state.players.find((player) => player.id === state.meId)?.avatar?.length ? 'Saved' : 'Optional';
+  paintPortraits();
+}
+
+app.addEventListener('change', (event) => {
+  const key = event.target.dataset.setting;
+  if (!key) return;
+  const value = ['rounds', 'drawSeconds'].includes(key) ? Number(event.target.value) : event.target.value;
+  void send('settings', { settings: { [key]: value } }).catch(() => updateLobby());
+});
 
 function heading(title = '', subtitle = '') {
   const phase = { draw: 'Draw', claim: 'Bluff', judge: 'Vote', reveal: 'The reveal' }[state.phase] ?? title;
@@ -279,15 +332,25 @@ function renderStage() {
   closeWordPicker(false);
   const stage = document.querySelector('#stage');
   if (state.phase === 'lobby') {
-    const canStart = state.players.length >= 2 && state.players.every((player) => player.connected);
-    stage.innerHTML = `<div class="panel">
-      <div class="players">${state.players.map((player) => `<div class="player-card"><span class="avatar">${escape(player.name.slice(0, 1).toUpperCase())}</span><strong>${escape(player.name)}</strong><p class="status">${player.id === state.hostId ? 'Host · ' : ''}${player.connected ? 'Ready to play' : 'Disconnected'}</p>${state.hostId === state.meId && player.id !== state.meId ? `<button class="danger small-button" data-action="remove" data-player="${player.id}" style="margin-top:10px">Remove</button>` : ''}</div>`).join('')}</div>
-      <div class="footer-actions">${state.hostId === state.meId ? `<button class="primary" data-action="start" ${canStart ? '' : 'disabled'}>Start game</button>` : `<p class="muted">${escape(name(state.hostId))} will start the game.</p>`}</div>
-      ${canStart ? '' : '<p class="muted" style="margin:16px 0 0;font-size:14px">Two or more players are needed to start.</p>'}${rules()}</div>`;
+    if (drawingTool === 'bucket') drawingTool = 'pencil';
+    stage.innerHTML = `<div class="lobby-heading"><div><p class="eyebrow">THE LOBBY</p><h1>Make yourself known.</h1></div><span id="lobby-count"></span></div>
+      <div class="lobby-grid"><section class="lobby-gathering" aria-label="Players and invitations">
+        <div class="lobby-invite"><img class="invite-qr" src="${gameEndpoint}?op=invite-qr&room=${state.code}" alt="Scan to join this room" width="144" height="144"><div><h2>Bring your friends.</h2><button class="invite-code" data-action="copy-code" aria-label="Copy room code ${state.code}">${state.code}</button><p class="muted">Scan, enter the code, or share the link.</p><button class="secondary" data-action="copy-link">Copy invite</button></div></div>
+        <div id="lobby-players" class="lobby-players"></div>
+        <details class="lobby-settings"><summary>Game settings</summary><div id="lobby-settings-fields"></div></details>
+        <div class="footer-actions"><p id="lobby-wait" class="muted"></p><button class="primary" id="lobby-start" data-action="start">Start game</button></div>${rules()}
+      </section><section class="panel portrait-editor" aria-label="Draw your portrait"><h2>Draw yourself.</h2><p class="muted">Your face for this game. Bad drawings welcome.</p><div class="canvas-wrap"><canvas id="avatar-canvas" width="800" height="500" class="drawing" aria-label="Draw your portrait"></canvas></div>
+        ${drawingTools(['pencil', 'eraser', 'undo', 'redo'])}
+        <div class="portrait-inks">${colors.filter((color) => color !== '#ffffff').map((color) => `<button class="swatch ${color === penColor ? 'selected' : ''}" style="--swatch:${color}" data-color="${color}" aria-label="Portrait color ${color}" aria-pressed="${color === penColor}"></button>`).join('')}</div>
+        <div class="portrait-actions"><button class="secondary small-button" data-action="clear-avatar">Clear</button><span id="avatar-status" role="status"></span><button class="primary" data-action="save-avatar">Save portrait</button></div>
+      </section></div>`;
+    paint(document.querySelector('#avatar-canvas'), strokes);
+    attachDrawing(document.querySelector('#avatar-canvas'));
+    updateLobby();
     return;
   }
   if (state.phase === 'draw') {
-    stage.innerHTML = `${heading('', 'Draw your assigned prompt. No words or letters.')}<div class="prompt assigned-prompt"><span id="assigned-prompt">${escape(sentence(state.me.original))}</span><button class="secondary shuffle-prompt" data-action="reroll-prompt" aria-label="Shuffle prompt" title="Shuffle prompt" ${state.me.drawingDone ? 'disabled' : ''}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h3c5 0 7 12 12 12h3M17 14l4 4-4 4M3 18h3c2 0 4-3 6-6s4-6 6-6h3M17 2l4 4-4 4"/></svg></button></div>
+    stage.innerHTML = `${heading('', 'Draw your assigned prompt. No words or letters.')}<div class="prompt assigned-prompt"><button class="secondary shuffle-prompt" data-action="reroll-prompt" aria-label="Shuffle prompt" title="Shuffle prompt" ${state.me.drawingDone ? 'disabled' : ''}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h3c5 0 7 12 12 12h3M17 14l4 4-4 4M3 18h3c2 0 4-3 6-6s4-6 6-6h3M17 2l4 4-4 4"/></svg></button><span id="assigned-prompt">${escape(sentence(state.me.original))}</span></div>
       <div class="drawing-workspace ${state.me.drawingDone ? 'drawing-locked' : ''}"><div class="canvas-wrap"><canvas id="draw-canvas" width="800" height="500" class="${state.me.drawingDone ? '' : 'drawing'}" aria-label="Your drawing"></canvas></div>
       </div>
       <div class="drawing-controls ${state.me.drawingDone ? 'drawing-locked' : ''}">${drawingTools()}<div class="brush-settings"><div class="tools">${colors.map((color) => `<button class="swatch ${color === penColor ? 'selected' : ''}" style="--swatch:${color}" data-color="${color}" aria-label="${({ '#172033': 'Black', '#ffffff': 'White', '#7057ff': 'Purple', '#ee5b75': 'Pink', '#13816a': 'Green', '#ef9b24': 'Orange', '#e53935': 'Red', '#f4d438': 'Yellow', '#24bfd1': 'Cyan', '#3478e5': 'Blue', '#915c38': 'Brown' })[color]}" aria-pressed="${color === penColor}"></button>`).join('')}</div>
@@ -318,7 +381,7 @@ function renderStage() {
   }
   if (state.phase === 'judge') {
     const targets = state.gallery.filter((entry) => entry.playerId !== state.meId);
-    stage.innerHTML = `${heading()}<div class="gallery">${targets.map((entry) => `<article class="drawing-card"><canvas width="800" height="500" data-gallery="${entry.playerId}" aria-label="Drawing by ${escape(name(entry.playerId))}"></canvas><div class="card-info"><div class="card-head"><span class="avatar">${escape(name(entry.playerId).slice(0, 1).toUpperCase())}</span><strong>${escape(name(entry.playerId))}</strong></div><div class="prompt">${escape(sentence(entry.claim))}</div><div class="vote-buttons"><button class="choice" data-vote="true" data-player="${entry.playerId}"><span class="vote-mark" aria-hidden="true">✓</span>Truth</button><button class="choice lie" data-vote="false" data-player="${entry.playerId}"><span class="vote-mark" aria-hidden="true">✓</span>Lie</button></div></div></article>`).join('')}</div>
+    stage.innerHTML = `${heading()}<div class="gallery">${targets.map((entry) => `<article class="drawing-card"><canvas width="800" height="500" data-gallery="${entry.playerId}" aria-label="Drawing by ${escape(name(entry.playerId))}"></canvas><div class="card-info"><div class="card-head">${portraitMarkup(state.players.find((player) => player.id === entry.playerId))}<strong>${escape(name(entry.playerId))}</strong></div><div class="prompt">${escape(sentence(entry.claim))}</div><div class="vote-buttons"><button class="choice" data-vote="true" data-player="${entry.playerId}"><span class="vote-mark" aria-hidden="true">✓</span>Truth</button><button class="choice lie" data-vote="false" data-player="${entry.playerId}"><span class="vote-mark" aria-hidden="true">✓</span>Lie</button></div></div></article>`).join('')}</div>
       ${targets.length === 0 ? '<div class="waiting">No other drawings to judge. Waiting for the others…</div>' : ''}<div class="footer-actions"><p id="vote-count" class="muted"></p><button class="primary" data-action="finish-votes" ${targets.length ? '' : 'hidden'}>Submit</button></div><div class="footer-actions">${readyMarkup()}</div>`;
     paintGallery(state.gallery);
     updateVotes();
@@ -327,8 +390,13 @@ function renderStage() {
   if (state.phase === 'reveal') {
     const result = state.result;
     const gain = result.gains[state.meId];
-    stage.innerHTML = `${heading()}<div class="round-summary"><div class="round-total"><span>You earned</span><strong>+${gain.judging + gain.belief}</strong></div><div class="round-breakdown"><span>Correct votes <b>+${gain.judging}</b></span><span>Believed by others <b>+${gain.belief}</b></span></div></div><div class="gallery">${result.entries.map((entry) => revealCard(entry)).join('')}</div>
-      ${result.entries.length ? '' : '<div class="waiting">No drawings · +0</div>'}<div class="footer-actions"><p class="muted" data-wait-host>Waiting for ${escape(name(state.hostId))}</p><button class="primary" data-action="next" data-host-only>${state.round === state.totalRounds ? 'Final scores' : 'Next round'}</button></div>`;
+    const guided = state.settings?.revealMode === 'guided' && result.entries.length > 0;
+    const complete = revealComplete();
+    const step = state.revealStep ?? 0;
+    const current = result.entries[Math.floor(step / 3)];
+    const summary = `<div class="round-summary"><div class="round-total"><span>You earned</span><strong>+${gain.judging + gain.belief}</strong></div><div class="round-breakdown"><span>Correct votes <b>+${gain.judging}</b></span><span>Believed by others <b>+${gain.belief}</b></span></div></div>`;
+    stage.innerHTML = `${heading()}${!guided || complete ? summary : ''}${guided ? `<p class="reveal-progress">Drawing ${Math.floor(step / 3) + 1} / ${result.entries.length}</p>` : ''}<div class="gallery ${guided ? 'guided-gallery' : ''}">${guided ? revealCard(current, step % 3) : result.entries.map((entry) => revealCard(entry)).join('')}</div>
+      ${result.entries.length ? '' : '<div class="waiting">No drawings · +0</div>'}<div class="footer-actions"><p class="muted" data-wait-host>Waiting for ${escape(name(state.hostId))}</p>${guided && !complete ? `<button class="primary" data-action="reveal-next" data-host-only>${['Reveal truth', 'Show votes', 'Next drawing'][step % 3]}</button>` : `<button class="primary" data-action="next" data-host-only>${state.round === state.totalRounds ? 'Final scores' : 'Next round'}</button>`}</div>`;
     paintGallery(result.entries);
     updateHostControls();
     return;
@@ -341,10 +409,14 @@ function renderStage() {
   }
 }
 
-function revealCard(entry) {
+function revealComplete() {
+  return !state.result?.entries.length || (state.revealStep ?? 0) >= state.result.entries.length * 3 - 1;
+}
+
+function revealCard(entry, level = 2) {
   const own = entry.playerId === state.meId;
   const details = drawingScoreDetails(entry, state.meId, name);
-  return `<article class="drawing-card"><canvas width="800" height="500" data-gallery="${entry.playerId}" aria-label="Drawing by ${escape(name(entry.playerId))}"></canvas><div class="card-info"><div class="card-head"><strong>${escape(name(entry.playerId))}${own ? ' (you)' : ''}</strong><span class="badge ${entry.truth ? '' : 'lie'}">${entry.truth ? 'TRUTH' : 'LIE'}</span></div><div class="prompt">${escape(sentence(entry.claim))}</div>${entry.truth ? '' : `<p class="reveal-line">Original: <strong>${escape(sentence(entry.original))}</strong></p>`}<div class="score-details">${own ? '<span class="score-caption">Truth votes → you</span>' : ''}${details.map((detail) => `<div class="score-detail-row"><span>${own ? escape(detail.playerName) : 'You'} <span class="muted">${detail.choice === 'No vote' ? 'skipped' : `${own ? 'voted' : 'guessed'} ${escape(detail.choice)}`}</span></span><strong class="${detail.points ? 'round-gain' : 'muted'}">${!own && detail.outcome === 'Correct' ? '<span aria-label="Correct">✓</span> ' : ''}+${detail.points}</strong></div>`).join('')}</div></div></article>`;
+  return `<article class="drawing-card"><canvas width="800" height="500" data-gallery="${entry.playerId}" aria-label="Drawing by ${escape(name(entry.playerId))}"></canvas><div class="card-info"><div class="card-head"><strong>${escape(name(entry.playerId))}${own ? ' (you)' : ''}</strong>${level >= 1 ? `<span class="badge ${entry.truth ? '' : 'lie'}">${entry.truth ? 'TRUTH' : 'LIE'}</span>` : '<span class="muted">Truth or lie?</span>'}</div><div class="prompt">${escape(sentence(entry.claim))}</div>${level < 1 || entry.truth ? '' : `<p class="reveal-line">Original: <strong>${escape(sentence(entry.original))}</strong></p>`}${level >= 2 ? `<div class="score-details">${own ? '<span class="score-caption">Truth votes → you</span>' : ''}${details.map((detail) => `<div class="score-detail-row"><span>${own ? escape(detail.playerName) : 'You'} <span class="muted">${detail.choice === 'No vote' ? 'skipped' : `${own ? 'voted' : 'guessed'} ${escape(detail.choice)}`}</span></span><strong class="${detail.points ? 'round-gain' : 'muted'}">${!own && detail.outcome === 'Correct' ? '<span aria-label="Correct">✓</span> ' : ''}+${detail.points}</strong></div>`).join('')}</div>` : ''}</div></article>`;
 }
 
 function closeWordPicker(restoreFocus = true) {
@@ -362,6 +434,10 @@ function closeWordPicker(restoreFocus = true) {
   if (restoreFocus && slot) document.querySelector(`[data-edit-slot="${slot}"]`)?.focus({ preventScroll: true });
 }
 
+function pickerWords(slot) {
+  return library[slot].filter((word) => state.settings?.wordPool !== 'familiar' || word.familiar);
+}
+
 function openWordPicker(slot) {
   if (state.phase !== 'claim' || state.me.claimDone || state.me.lockedSlot === slot) return;
   closeWordPicker(false);
@@ -374,9 +450,9 @@ function openWordPicker(slot) {
   }).join(' ');
   const search = document.querySelector('#picker-search');
   search.value = '';
-  search.placeholder = `Search ${library[slot].length} ${slot === 'character' ? 'characters' : slot === 'action' ? 'actions' : 'objects'}`;
+  search.placeholder = `Search ${pickerWords(slot).length} ${slot === 'character' ? 'characters' : slot === 'action' ? 'actions' : 'objects'}`;
   document.querySelector('.picker-families').open = false;
-  document.querySelector('#picker-families').innerHTML = [...new Set(library[slot].map((entry) => entry.family))].sort()
+  document.querySelector('#picker-families').innerHTML = [...new Set(pickerWords(slot).map((entry) => entry.family))].sort()
     .map((family) => `<button class="word-button" data-family="${escape(family)}">${escape(family)}</button>`).join('');
   renderPickerResults();
   document.querySelector(`[data-edit-slot="${slot}"]`).setAttribute('aria-expanded', 'true');
@@ -397,7 +473,7 @@ function openWordPicker(slot) {
 function renderPickerResults() {
   if (!activePicker) return;
   const { slot, query, family } = activePicker;
-  const result = wordPage(library[slot], { ...activePicker, originalId: state.me.original[slot] });
+  const result = wordPage(pickerWords(slot), { ...activePicker, originalId: state.me.original[slot] });
   activePicker.page = result.page;
   const label = query.trim() ? `${result.total} match${result.total === 1 ? '' : 'es'}` : family || 'Similar shapes';
   document.querySelector('#picker-results').innerHTML = `<p class="picker-caption" role="status">${escape(label)}</p>
@@ -436,7 +512,7 @@ function updateVotes() {
   }
 }
 
-function drawingTools() {
+function drawingTools(tools = ['pencil', 'eraser', 'undo', 'redo', 'bucket']) {
   const icons = {
     pencil: '<path d="m4 16 12-12 4 4-12 12-5 1zM13 7l4 4"/>',
     eraser: '<path d="m4 14 9-10 7 7-9 10H7zM9 9l7 7M11 21h10"/>',
@@ -444,7 +520,7 @@ function drawingTools() {
     redo: '<path d="m15 5 5 5-5 5M20 10H10a6 6 0 0 0 0 12"/>',
     bucket: '<path d="m4 12 8-8 8 8-8 8zM8 2l6 6M3 12h18M20 16s-3 3-3 5a3 3 0 0 0 6 0c0-2-3-5-3-5z"/>',
   };
-  return `<div class="tool-rail" aria-label="Drawing tools">${['pencil', 'eraser', 'undo', 'redo', 'bucket'].map((tool) => `<button class="secondary drawing-tool" data-action="${tool}" aria-label="${tool[0].toUpperCase() + tool.slice(1)}" ${['undo', 'redo'].includes(tool) ? (tool === 'undo' ? !strokes.length : !redoStrokes.length) ? 'disabled' : '' : `aria-pressed="${drawingTool === tool}"`}><svg viewBox="0 0 26 26" aria-hidden="true">${icons[tool]}</svg><span>${tool[0].toUpperCase() + tool.slice(1)}</span></button>`).join('')}</div>`;
+  return `<div class="tool-rail" aria-label="Drawing tools">${tools.map((tool) => `<button class="secondary drawing-tool" data-action="${tool}" aria-label="${tool[0].toUpperCase() + tool.slice(1)}" ${['undo', 'redo'].includes(tool) ? (tool === 'undo' ? !strokes.length : !redoStrokes.length) ? 'disabled' : '' : `aria-pressed="${drawingTool === tool}"`}><svg viewBox="0 0 26 26" aria-hidden="true">${icons[tool]}</svg><span>${tool[0].toUpperCase() + tool.slice(1)}</span></button>`).join('')}</div>`;
 }
 
 function updateDrawingTools() {
@@ -476,17 +552,27 @@ function paint(canvas, paths) {
 }
 
 function paintGallery(entries) {
+  paintPortraits();
   document.querySelectorAll('[data-gallery]').forEach((canvas) => {
     paint(canvas, entries.find((entry) => entry.playerId === canvas.dataset.gallery)?.strokes ?? []);
   });
 }
 
 function saveDraft() {
+  if (state?.phase === 'lobby') {
+    avatarDirty = true;
+    store('sketchy-avatar', { playerId: state.meId, strokes });
+    const status = document.querySelector('#avatar-status');
+    if (status) status.textContent = 'Not saved';
+    return;
+  }
   dirtyDrawing = true;
   store('sketchy-drawing', { key: stageKey, strokes });
 }
 
 function attachDrawing(canvas) {
+  const portrait = canvas.id === 'avatar-canvas';
+  const pointLimit = portrait ? 1500 : 12000;
   drawingPointer = null;
   activeStroke = null;
   function point(event) {
@@ -494,9 +580,9 @@ function attachDrawing(canvas) {
     return [Math.max(0, Math.min(800, (event.clientX - bounds.left) / bounds.width * 800)), Math.max(0, Math.min(500, (event.clientY - bounds.top) / bounds.height * 500))];
   }
   canvas.addEventListener('pointerdown', (event) => {
-    if (drawingPointer !== null || state.phase !== 'draw' || state.me.drawingDone || (event.pointerType === 'mouse' && event.button !== 0)) return;
-    if (strokes.length >= 250) { notify('The drawing is full. Undo a stroke to continue.'); return; }
-    if (drawingTool === 'bucket') {
+    if (drawingPointer !== null || (!portrait && (state.phase !== 'draw' || state.me.drawingDone)) || (portrait && state.phase !== 'lobby') || (event.pointerType === 'mouse' && event.button !== 0)) return;
+    if (strokes.length >= (portrait ? 60 : 250)) { notify('The drawing is full. Undo a stroke to continue.'); return; }
+    if (!portrait && drawingTool === 'bucket') {
       const context = canvas.getContext('2d');
       const [x, y] = point(event);
       const remaining = 12000 - strokes.reduce((count, stroke) => count + (stroke.spans?.length ?? 0), 0);
@@ -510,7 +596,7 @@ function attachDrawing(canvas) {
       } catch (error) { notify(error.message); }
       return;
     }
-    if (strokes.reduce((count, stroke) => count + (stroke.points?.length ?? 0), 0) >= 12000) return;
+    if (strokes.reduce((count, stroke) => count + (stroke.points?.length ?? 0), 0) >= pointLimit) return;
     drawingPointer = event.pointerId;
     canvas.setPointerCapture(event.pointerId);
     activeStroke = { color: drawingTool === 'eraser' ? '#ffffff' : penColor, width: penWidth, opacity: penOpacity, points: [point(event)] };
@@ -522,14 +608,15 @@ function attachDrawing(canvas) {
   });
   canvas.addEventListener('pointermove', (event) => {
     if (event.pointerId !== drawingPointer || !activeStroke) return;
-    if (activeStroke.points.length >= 2000 || strokes.reduce((count, stroke) => count + (stroke.points?.length ?? 0), 0) >= 12_000) return;
+    if (activeStroke.points.length >= (portrait ? 1500 : 2000) || strokes.reduce((count, stroke) => count + (stroke.points?.length ?? 0), 0) >= pointLimit) return;
     const next = point(event);
     const last = activeStroke.points.at(-1);
     if (Math.hypot(next[0] - last[0], next[1] - last[1]) < 2) return;
     activeStroke.points.push(next);
     // Replay the active stroke once so overlapping pointer samples preserve opacity.
     paint(canvas, strokes);
-    dirtyDrawing = true;
+    if (portrait) saveDraft();
+    else dirtyDrawing = true;
   });
   function end(event) {
     if (event.pointerId !== drawingPointer) return;
@@ -618,6 +705,20 @@ app.addEventListener('click', async (event) => {
     return;
   }
   const action = button.dataset.action;
+  if (action === 'save-avatar') return void withButton(button, async () => {
+    await send('avatar', { strokes: structuredClone(strokes) });
+    avatarDirty = false;
+    document.querySelector('#avatar-status').textContent = 'Saved';
+  });
+  if (action === 'clear-avatar') {
+    strokes = [];
+    redoStrokes = [];
+    saveDraft();
+    paint(document.querySelector('#avatar-canvas'), strokes);
+    updateDrawingTools();
+    return;
+  }
+  if (action === 'reveal-next') return void withButton(button, () => send('reveal-next', { step: state.revealStep }));
   if (action === 'close-picker') return closeWordPicker();
   if (action === 'toggle-code') {
     roomCodeVisible = !roomCodeVisible;
@@ -646,7 +747,7 @@ app.addEventListener('click', async (event) => {
     if (action === 'redo' && redoStrokes.length) strokes.push(redoStrokes.pop());
     drawingPointer = null;
     activeStroke = null;
-    paint(document.querySelector('#draw-canvas'), strokes);
+    paint(document.querySelector(state.phase === 'lobby' ? '#avatar-canvas' : '#draw-canvas'), strokes);
     saveDraft();
     updateDrawingTools();
     return;

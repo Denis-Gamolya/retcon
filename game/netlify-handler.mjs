@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { GameEngine, timing } from './engine.mjs';
+import qrcode from 'qrcode-generator';
 import { vocabulary } from './vocabulary.mjs';
 
 const lifetime = 6 * 60 * 60 * 1000;
@@ -34,6 +35,16 @@ export function createGameHandler({ store, now = Date.now, totalRounds = 5, dura
   return async function handle(request) {
     try {
       const url = new URL(request.url);
+      if (request.method === 'GET' && url.searchParams.get('op') === 'invite-qr') {
+        const code = url.searchParams.get('room') ?? '';
+        if (!/^[A-Z2-9]{6}$/.test(code)) throw failure('Enter a valid room code.');
+        const qr = qrcode(0, 'M');
+        qr.addData(`${url.origin}/?room=${code}`);
+        qr.make();
+        return new Response(qr.createSvgTag({ cellSize: 4, margin: 16, scalable: true }), {
+          headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=3600' },
+        });
+      }
       if (request.method === 'GET' && url.searchParams.get('op') === 'vocabulary') return json(vocabulary);
       if (request.method === 'GET' && url.searchParams.get('op') === 'health') return json({ ok: true });
       if (request.method !== 'POST') return json({ error: 'Use POST for game requests.' }, 405);

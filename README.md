@@ -52,7 +52,13 @@ https://docs.netlify.com/deploy/create-deploys/#drag-and-drop
 
 ## Play
 
-- 2–8 players, five rounds by default.
+- 2–8 players, five rounds by default; the host can choose three rounds.
+- Draw and save a personal portrait in the lobby. Portraits appear beside player
+  names during the game and remain available for a rematch.
+- Invite friends with the room QR code, room code, or Copy invite.
+- Game settings offer 30/60/90/120-second drawing time, Familiar words or Full
+  library, and all-at-once or host-paced reveals. Only the host can change them,
+  and only before the game starts.
 - Draw your phrase for 60 seconds. Shuffle has a one-second cooldown.
 - The action always stays fixed. During 30 seconds, keep the phrase or change
   the character, object, or both. Underlined parts open searchable family pickers.
@@ -65,7 +71,8 @@ https://docs.netlify.com/deploy/create-deploys/#drag-and-drop
 
 ```mermaid
 flowchart LR
-  A[Browser: existing drawing UI] -->|Short requests and polling| B[Netlify Function: game.ts]
+  A[Browser: lobby, portraits and drawing UI] -->|Short requests and polling| B[Netlify Function: game.ts]
+  B -->|Invite request| Q[QR generator: same-origin room link]
   B --> C[Load room with strong consistency]
   C --> D[Validate identity, deadlines, actions and scores]
   D --> E[Conditional room write with ETag]
@@ -96,8 +103,11 @@ https://www.netlify.com/knowledge-base/how-to-store-files-and-objects-with-netli
 
 ## Library and artwork
 
-`game/vocabulary.mjs` contains 174 characters in 37 visual families, 34 actions
-in 6 families, and 287 objects in 61 families. IDs remain stable. All artwork,
+`game/vocabulary.mjs` contains 202 characters in 38 visual families, 34 actions
+in 6 families, and 343 objects in 63 families. Familiar mode offers 112
+characters and 171 objects, keeping complete visual
+families. Existing IDs remain stable. The generator avoids the last 16 character
+and object terms, and avoids exact repeated phrases within a game. All artwork,
 custom font assets, and their original source sheets are included.
 See `LETTERING.md` for the artwork conventions and optional rebuild workflow.
 
@@ -127,6 +137,28 @@ The prepackaged function is evidence of the verified build, not a workaround
 for static Drop. The logged-in source build packages the function on Netlify.
 Free-tier usage limits apply to hosting and Blobs. No hosted accounts or player
 accounts are created by this archive.
+
+## Group playtest
+
+Run with 4–6 real people, ideally mixing phones and computers. Try one short game
+with Familiar words and host-paced reveals, then a game using the full library.
+Observe without coaching the first round. Note:
+
+| Check | Record |
+| --- | --- |
+| Join and setup | Who needed help joining or saving a portrait? |
+| Prompt quality | Repeated terms, frequent shuffles, unfamiliar choices. |
+| Round flow | Skipped drawings, missed submissions, confusing reveals. |
+| Bluffing | Whether Truth or Lie becomes too predictable, and why. |
+| Devices | Any clipping, lost gestures, or keyboard/rotation issues. |
+
+Discuss scoring only after the games. Record the group’s examples before
+changing point values. Automated four-player tests verify rules; they do not
+replace observing a real group’s fun, understanding, and pacing.
+
+QR generation uses `qrcode-generator` locally on the function, following its
+maintainer’s JavaScript API: https://github.com/kazuhikoarase/qrcode-generator/tree/master/js
+No third-party QR service receives room invitations.
 
 ## Optional developer workflow
 

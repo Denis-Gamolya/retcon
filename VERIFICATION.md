@@ -14,6 +14,26 @@ Verified locally and on the existing Netlify project on October 20, 2026.
 - Both test players left afterward. This hosted smoke check does not replace
   the complete local games below or establish cloud concurrency limits.
 
+## October 26 lobby and gameplay expansion
+
+- Production build and all 46 automated tests passed.
+- Isolated Chrome desktop/mobile sessions completed three guided rounds:
+  Sketch Guest won 2,400 to 1,900, with no page errors. Lobby drafts survived
+  joins/polling, saved portraits synchronized, QR images loaded, guest settings
+  stayed read-only, and mobile picker scroll locking and left-side shuffle
+  placement passed. The test used 390×700/844 and 844×390 viewports; it is not
+  physical iPhone verification.
+- Host-only lobby settings are validated and cannot change after the game starts.
+- Portrait vectors are limited to 60 strokes and 1,500 points. They persist
+  through a game and rematch, without exposing authentication credentials.
+- Recent-term avoidance and exact phrase uniqueness were tested, including
+  300 generated prompts and Familiar-mode family coverage.
+- Four simulated players completed three guided rounds with synchronized reveal
+  steps, duplicate-step rejection, unchanged scoring, and a shared final win.
+- Cold function requests preserve settings, portraits, and the current reveal.
+- QR generation returns same-origin invitation SVGs and rejects invalid codes.
+- A 4–6-person usability playtest is still needed. See the README checklist.
+
 ## Local verification
 
 - Landscape places the prompt and shuffle below the canvas, with the timer,
