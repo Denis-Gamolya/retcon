@@ -16,6 +16,13 @@ Verified locally and on the existing Netlify project on October 20, 2026.
 
 ## October 26 lobby and gameplay expansion
 
+- Lobby polish: isolated desktop/mobile Chrome checks verified circular portrait
+  editing, copying the QR invite and room code, and applying both players'
+  unsaved portraits when the host starts. Claim Submit/Unsubmit and reset are
+  below the drawing preview; the desktop picker opens higher in the other column.
+  Mobile picker scroll locking and page width checks passed without page errors.
+- Portrait transition saves accept only the current game's first drawing phase;
+  stale game IDs and later claim-phase saves are rejected in regression tests.
 - Production build and all 46 automated tests passed.
 - Isolated Chrome desktop/mobile sessions completed three guided rounds:
   Sketch Guest won 2,400 to 1,900, with no page errors. Lobby drafts survived

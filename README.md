@@ -53,9 +53,11 @@ https://docs.netlify.com/deploy/create-deploys/#drag-and-drop
 ## Play
 
 - 2–8 players, five rounds by default; the host can choose three rounds.
-- Draw and save a personal portrait in the lobby. Portraits appear beside player
-  names during the game and remain available for a rematch.
-- Invite friends with the room QR code, room code, or Copy invite.
+- Draw a personal portrait in the circular lobby editor. Save it manually, or
+  let the game apply the current draft automatically when play starts. Portraits
+  appear beside player names and remain available for a rematch.
+- Click the lobby QR code to copy the invite link, or the room code to copy the
+  code. Friends can also scan the QR code to join.
 - Game settings offer 30/60/90/120-second drawing time, Familiar words or Full
   library, and all-at-once or host-paced reveals. Only the host can change them,
   and only before the game starts.

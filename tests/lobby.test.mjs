@@ -39,7 +39,13 @@ test('portraits are public, bounded vectors and survive new games and rematches'
   assert.throws(() => engine.action(room, host, 'avatar', { strokes: [{ type: 'fill', color: '#172033', spans: [[0, 0, 800]] }] }), /1,500/);
   engine.start(room, host);
   assert.throws(() => engine.action(room, host, 'avatar', { strokes: [] }), /lobby/);
+  assert.throws(() => engine.action(room, host, 'avatar', { strokes: [], gameId: 'old-game' }), /lobby/);
+  engine.action(room, host, 'avatar', { strokes: [], gameId: room.gameId });
+  assert.deepEqual(engine.view(room, players[1]).players[0].avatar, []);
+  engine.action(room, host, 'avatar', { strokes: sketch, gameId: room.gameId });
   assert.deepEqual(host.avatar, sketch);
+  room.phase = 'claim';
+  assert.throws(() => engine.action(room, host, 'avatar', { strokes: [], gameId: room.gameId }), /lobby/);
   room.phase = 'finished';
   engine.action(room, host, 'rematch');
   assert.deepEqual(host.avatar, sketch);

@@ -249,7 +249,8 @@ export class GameEngine {
     this.tick(room);
     if (action === 'settings') return this.changeSettings(room, player, payload.settings);
     if (action === 'avatar') {
-      assert(room.phase === 'lobby', 'Edit your portrait in the lobby.');
+      // Lobby drafts may arrive after the host starts; reject drafts from older games.
+      assert(room.phase === 'lobby' || (room.phase === 'draw' && room.round === 1 && payload.gameId === room.gameId), 'Edit your portrait in the lobby.');
       assert(Array.isArray(payload.strokes) && payload.strokes.length <= 60, 'Use at most 60 portrait strokes.');
       const avatar = validateDrawing(payload.strokes);
       assert(avatar.every((stroke) => !stroke.type) && avatar.reduce((count, stroke) => count + stroke.points.length, 0) <= 1500, 'Portraits support up to 1,500 pen points.');

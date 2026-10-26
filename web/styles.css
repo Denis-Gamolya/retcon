@@ -382,21 +382,24 @@ body:has(.phase-lobby) #app { max-width: 1280px; }
 .lobby-invite { display: flex; align-items: center; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
 .lobby-invite h2, .portrait-editor h2 { font-family: inherit; font-size: 21px; font-weight: 600; margin-bottom: 8px; }
 .invite-qr { width: 144px; height: 144px; flex-shrink: 0; background: white; }
+.invite-qr-button { display: grid; gap: 8px; padding: 0; border: 0; background: transparent; flex-shrink: 0; font-size: 12px; color: var(--muted); }
 .invite-code { border: 0; padding: 0; background: transparent; font: 600 30px ui-monospace, monospace; letter-spacing: 4px; }
 .lobby-invite p { font-size: 13px; margin: 8px 0 12px; }
 .lobby-players { padding: 8px 0 20px; }
 .lobby-player { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
 .lobby-player > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .lobby-player small { display: block; color: var(--muted); margin-top: 3px; }
-.lobby-player .avatar { width: 72px; height: 54px; border-radius: 3px; font-size: 22px; }
+.lobby-player .avatar { width: 54px; height: 54px; font-size: 22px; }
 .avatar { overflow: hidden; }
-.avatar canvas { width: 100%; height: 100%; object-fit: contain; }
+.avatar canvas { width: 100%; height: 100%; object-fit: cover; }
 .lobby-settings { border-bottom: 1px solid var(--border); padding-bottom: 12px; }
 #lobby-settings-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 8px; }
 #lobby-settings-fields label { font-size: 12px; color: var(--muted); }
 #lobby-settings-fields select { margin-top: 5px; font-size: 14px; }
 .portrait-editor { position: relative; padding: 26px; box-shadow: 4px 5px 0 #e5dfd1; }
 .portrait-editor > p { font-size: 13px; margin-bottom: 20px; }
+.portrait-editor .portrait-canvas { position: relative; width: min(100%, 360px); aspect-ratio: 1; border-radius: 50%; margin: 20px auto 0; }
+.portrait-canvas canvas { position: absolute; width: 160%; max-width: none; height: 100%; left: -30%; }
 .portrait-editor .tool-rail { grid-template-columns: repeat(4, 1fr); margin: 14px 0; }
 .portrait-editor .drawing-tool { font-size: 12px; }
 .portrait-inks { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); justify-items: center; gap: 12px 8px; padding: 5px; }

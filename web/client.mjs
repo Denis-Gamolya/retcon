@@ -186,6 +186,10 @@ function accept(next) {
   clockOffset = next.serverTime - Date.now();
   const previous = state;
   state = next;
+  // Capture the lobby draft before the drawing phase replaces the shared strokes.
+  if (previous?.phase === 'lobby' && state.phase !== 'lobby' && avatarDirty) {
+    void savePortrait(structuredClone(strokes)).catch(() => {});
+  }
   const nextKey = `${state.code}:${state.gameId}:${state.round}:${state.phase}`;
   if (stageKey !== nextKey) {
     if (state.phase === 'lobby') {
@@ -287,7 +291,7 @@ function updateLobby() {
   settings.querySelectorAll('[data-setting]').forEach((select) => {
     if (document.activeElement !== select) select.value = String(state.settings[select.dataset.setting]);
   });
-  document.querySelector('#avatar-status').textContent = avatarDirty ? 'Not saved' : state.players.find((player) => player.id === state.meId)?.avatar?.length ? 'Saved' : 'Optional';
+  document.querySelector('#avatar-status').textContent = avatarDirty ? 'Not saved' : state.players.find((player) => player.id === state.meId)?.avatar?.length ? 'Saved' : '';
   paintPortraits();
 }
 
@@ -333,13 +337,13 @@ function renderStage() {
   const stage = document.querySelector('#stage');
   if (state.phase === 'lobby') {
     if (drawingTool === 'bucket') drawingTool = 'pencil';
-    stage.innerHTML = `<div class="lobby-heading"><div><p class="eyebrow">THE LOBBY</p><h1>Make yourself known.</h1></div><span id="lobby-count"></span></div>
+    stage.innerHTML = `<div class="lobby-heading"><div><h1>Make yourself known.</h1></div><span id="lobby-count"></span></div>
       <div class="lobby-grid"><section class="lobby-gathering" aria-label="Players and invitations">
-        <div class="lobby-invite"><img class="invite-qr" src="${gameEndpoint}?op=invite-qr&room=${state.code}" alt="Scan to join this room" width="144" height="144"><div><h2>Bring your friends.</h2><button class="invite-code" data-action="copy-code" aria-label="Copy room code ${state.code}">${state.code}</button><p class="muted">Scan, enter the code, or share the link.</p><button class="secondary" data-action="copy-link">Copy invite</button></div></div>
+        <div class="lobby-invite"><button class="invite-qr-button" data-action="copy-link" aria-label="Copy invite link" title="Click to copy invite link"><img class="invite-qr" src="${gameEndpoint}?op=invite-qr&room=${state.code}" alt="Scan to join this room" width="144" height="144"><span>Click to copy link</span></button><div><h2>Bring your friends.</h2><button class="invite-code" data-action="copy-code" aria-label="Copy room code ${state.code}" title="Click to copy room code">${state.code}</button><p class="muted">Click to copy code</p></div></div>
         <div id="lobby-players" class="lobby-players"></div>
         <details class="lobby-settings"><summary>Game settings</summary><div id="lobby-settings-fields"></div></details>
         <div class="footer-actions"><p id="lobby-wait" class="muted"></p><button class="primary" id="lobby-start" data-action="start">Start game</button></div>${rules()}
-      </section><section class="panel portrait-editor" aria-label="Draw your portrait"><h2>Draw yourself.</h2><p class="muted">Your face for this game. Bad drawings welcome.</p><div class="canvas-wrap"><canvas id="avatar-canvas" width="800" height="500" class="drawing" aria-label="Draw your portrait"></canvas></div>
+      </section><section class="panel portrait-editor" aria-label="Draw your portrait"><h2>Draw yourself.</h2><div class="canvas-wrap portrait-canvas"><canvas id="avatar-canvas" width="800" height="500" class="drawing" aria-label="Draw your portrait"></canvas></div>
         ${drawingTools(['pencil', 'eraser', 'undo', 'redo'])}
         <div class="portrait-inks">${colors.filter((color) => color !== '#ffffff').map((color) => `<button class="swatch ${color === penColor ? 'selected' : ''}" style="--swatch:${color}" data-color="${color}" aria-label="Portrait color ${color}" aria-pressed="${color === penColor}"></button>`).join('')}</div>
         <div class="portrait-actions"><button class="secondary small-button" data-action="clear-avatar">Clear</button><span id="avatar-status" role="status"></span><button class="primary" data-action="save-avatar">Save portrait</button></div>
@@ -362,10 +366,10 @@ function renderStage() {
     return;
   }
   if (state.phase === 'claim') {
-    stage.innerHTML = `${heading('', 'Change the character or object. Keep the action.')}<div class="claim-layout"><div class="canvas-wrap"><canvas id="claim-canvas" width="800" height="500" aria-label="Your locked drawing"></canvas></div>
+    stage.innerHTML = `${heading('', 'Change the character or object. Keep the action.')}<div class="claim-layout"><div class="claim-drawing"><div class="canvas-wrap"><canvas id="claim-canvas" width="800" height="500" aria-label="Your locked drawing"></canvas></div>
+        ${state.me.active ? `<div class="footer-actions claim-footer"><button class="secondary reset-claim" data-action="reset-claim" aria-label="Reset prompt to original" title="Reset prompt to original" ${state.me.claimDone ? 'style="visibility:hidden" disabled' : ''}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/></svg></button><button class="${state.me.claimDone ? 'secondary' : 'primary'}" data-action="${state.me.claimDone ? 'unlock-claim' : 'done-claim'}">${state.me.claimDone ? 'Unsubmit' : 'Submit'}</button></div>` : ''}</div>
       ${!state.me.active ? '<div class="waiting">No drawing · You can still guess</div>' : `<div class="claim-workspace">
         <div id="claim-preview" class="prompt claim-sentence"></div>
-        <div class="footer-actions claim-footer"><button class="secondary reset-claim" data-action="reset-claim" aria-label="Reset prompt to original" title="Reset prompt to original" ${state.me.claimDone ? 'style="visibility:hidden" disabled' : ''}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/></svg></button><button class="${state.me.claimDone ? 'secondary' : 'primary'}" data-action="${state.me.claimDone ? 'unlock-claim' : 'done-claim'}">${state.me.claimDone ? 'Unsubmit' : 'Submit'}</button></div>
         <dialog id="word-picker" class="word-picker" aria-labelledby="picker-title">
           <div class="picker-heading"><strong id="picker-title"></strong><button class="secondary picker-close" data-action="close-picker" aria-label="Close word picker">×</button></div>
           <p id="picker-context" class="picker-context"></p>
@@ -570,6 +574,13 @@ function saveDraft() {
   store('sketchy-drawing', { key: stageKey, strokes });
 }
 
+async function savePortrait(snapshot) {
+  await send('avatar', { strokes: snapshot });
+  avatarDirty = state.phase === 'lobby' && JSON.stringify(strokes) !== JSON.stringify(snapshot);
+  const status = document.querySelector('#avatar-status');
+  if (status) status.textContent = avatarDirty ? 'Not saved' : 'Saved';
+}
+
 function attachDrawing(canvas) {
   const portrait = canvas.id === 'avatar-canvas';
   const pointLimit = portrait ? 1500 : 12000;
@@ -706,9 +717,7 @@ app.addEventListener('click', async (event) => {
   }
   const action = button.dataset.action;
   if (action === 'save-avatar') return void withButton(button, async () => {
-    await send('avatar', { strokes: structuredClone(strokes) });
-    avatarDirty = false;
-    document.querySelector('#avatar-status').textContent = 'Saved';
+    await savePortrait(structuredClone(strokes));
   });
   if (action === 'clear-avatar') {
     strokes = [];
