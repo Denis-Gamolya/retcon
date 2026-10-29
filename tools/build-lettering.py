@@ -27,7 +27,7 @@ COLORS = [
 ]
 
 
-def contours(mask, scale):
+def contours(mask, scale, baseline=0):
     """Trace all ink boundaries, retaining counters and hand-drawn wobble."""
     paths, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     pen = TTGlyphPen(None)
@@ -38,7 +38,7 @@ def contours(mask, scale):
         simplified = cv2.approxPolyDP(path, 0.65, True)[:, 0]
         # Reverse after flipping Y: TrueType expects clockwise outer contours.
         points = [
-            (round(x * scale + SIDE_BEARING), round((height - y) * scale))
+            (round(x * scale + SIDE_BEARING), round((height - y) * scale + baseline))
             for x, y in simplified[::-1]
         ]
         if len(points) < 3:
@@ -70,7 +70,7 @@ def interior_mask(ink):
 
 
 def extract_letters():
-    """Group exterior components by size, then map the sheet's visual order."""
+    """Map sheets by visual order or explicit bounds for multipart punctuation."""
     sheets = json.loads((SOURCE / "sources.json").read_text())
     letters = {}
     for filename, characters in sheets.items():
@@ -78,6 +78,13 @@ def extract_letters():
         if image is None:
             raise ValueError(f"Missing source sheet: {filename}")
         ink = np.where(image < 128, 255, 0).astype(np.uint8)
+        if isinstance(characters, dict):
+            for character, (x, y, width, height) in characters.items():
+                letters[character] = (
+                    ink[y:y + height, x:x + width].copy(), filename,
+                    [x, y, width, height],
+                )
+            continue
         _, _, stats, _ = cv2.connectedComponentsWithStats(ink)
         components = sorted(stats[1:], key=lambda box: int(box[4]), reverse=True)
         # Inner counter outlines are separate components, enclosed by these boxes.
@@ -87,8 +94,8 @@ def extract_letters():
         for character, (x, y, width, height, _) in zip(characters, exteriors, strict=True):
             crop = ink[y:y + height, x:x + width].copy()
             letters[character] = (crop, filename, [int(x), int(y), int(width), int(height)])
-    if set(letters) != set("ABCDEFGHIJKLMNOPQRSTUVWXYZ."):
-        raise ValueError("The source sheets must contain A–Z and a period.")
+    if set(letters) != set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.+-,!?;"):
+        raise ValueError("The source sheets must contain the alphabet, digits, and punctuation.")
     return letters
 
 
@@ -103,24 +110,37 @@ def build_fonts():
     color_layers = {}
     manifest = {}
     silhouettes = {}
+    names = dict(zip("0123456789", [
+        "zero", "one", "two", "three", "four", "five", "six",
+        "seven", "eight", "nine",
+    ], strict=True))
+    names.update({".": "period", ",": "comma", "-": "hyphen", "+": "plus",
+                  "!": "exclam", "?": "question", ";": "semicolon"})
+    heights = {".": 125, ",": 180, "-": 190, "+": 620, ";": 340}
+    baselines = {",": -100, "-": 330, "+": 115, ";": -100}
     for character, (ink, filename, bounds) in sorted(letters.items()):
-        name = "period" if character == "." else character
-        scale = (125 if character == "." else CAP_HEIGHT) / ink.shape[0]
+        name = names.get(character, character)
+        scale = heights.get(character, CAP_HEIGHT) / ink.shape[0]
+        baseline = baselines.get(character, 0)
         width = round(ink.shape[1] * scale)
         advance = width + SIDE_BEARING * 2
-        glyphs[name] = contours(ink, scale)
+        glyphs[name] = contours(ink, scale, baseline)
         metrics[name] = (advance, SIDE_BEARING)
         cmap[ord(character)] = name
+        if character == "-":
+            cmap[0x2212] = name
         if character.isalpha():
             cmap[ord(character.lower())] = name
+        if character.isalnum() or character in "+-,!?;":
             fill = interior_mask(ink)
             rows, columns = np.indices(fill.shape)
             scratches = ((rows + columns // 3) % 23 < 2) & ((columns // 19 + rows // 31) % 5 != 0)
             fill[scratches] = 0
             fill_name = f"{name}.fill"
-            glyphs[fill_name] = contours(fill, scale)
+            glyphs[fill_name] = contours(fill, scale, baseline)
             metrics[fill_name] = (advance, SIDE_BEARING)
             color_layers[name] = [(fill_name, (ord(character) - 65) % len(COLORS)), (name, 0xFFFF)]
+        if character.isalnum():
             silhouette = cv2.resize(ink, (width, CAP_HEIGHT), interpolation=cv2.INTER_NEAREST)
             silhouettes[name] = silhouette
         manifest[character] = {"sheet": filename, "bounds": bounds, "advance": advance}
@@ -152,7 +172,7 @@ def build_fonts():
             "uniqueFontIdentifier": family + "-1.0", "fullName": family,
             "psName": family.replace(" ", "") + "-Regular",
             "version": "Version 1.0", "designer": "Denis",
-            "description": "Original hand-drawn letters by Denis.",
+            "description": "Original hand-drawn letters, numbers, and symbols by Denis.",
         })
         builder.setupOS2(sTypoAscender=950, sTypoDescender=-100,
                          usWinAscent=950, usWinDescent=100,

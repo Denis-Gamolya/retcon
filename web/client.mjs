@@ -16,7 +16,7 @@ let claim = null;
 let activePicker = null;
 let avatarDirty = false;
 let pickerScrollPosition = null;
-const modalPickerQuery = matchMedia('(max-width: 620px), (max-height: 500px) and (orientation: landscape)');
+const compactPickerQuery = matchMedia('(max-width: 900px), (max-height: 500px) and (orientation: landscape)');
 let penColor = colors[0];
 let penWidth = 4;
 let drawingTool = 'pencil';
@@ -108,7 +108,7 @@ function rules() {
     <li><strong>Draw the phrase</strong></li>
     <li><strong>Keep it or change a word</strong></li>
     <li><strong>Guess who's lying and who's honest</strong></li>
-    </ol><p><strong>+500 per correct vote<br>+300 when someone votes truth on your work</strong></p></details>`;
+    </ol><p><strong><span class="points">+500</span> per correct vote<br><span class="points">+300</span> when someone votes truth on your work</strong></p></details>`;
 }
 
 function renderHome() {
@@ -117,7 +117,7 @@ function renderHome() {
   roomCodeVisible = false;
   const invite = new URL(location.href).searchParams.get('room') ?? '';
   app.innerHTML = `<div class="setup"><section><p class="eyebrow">2–8 PLAYERS</p>
-    <h1>Draw badly.<br><span class="highlight">Bluff brilliantly.</span></h1>
+    <h1>Draw Now.<br><span class="highlight">Lie Later.</span></h1>
 
 
     <div class="home-doodle" aria-hidden="true"><svg class="home-face" viewBox="220 30 1020 770"><image href="/mascot.png" width="2064" height="864"/></svg></div>
@@ -234,7 +234,7 @@ function accept(next) {
 }
 
 function renderRoom() {
-  app.innerHTML = `<div class="room-bar"><a class="room-brand" href="/" aria-label="Sketchy Alibis home">SKETCHY<br>ALIBIS.</a><div class="inline"><button class="secondary small-button landscape-room-toggle" popovertarget="landscape-room-panel" aria-label="Room controls and players">Room</button><button type="button" class="room-code" data-action="toggle-code" aria-label="${roomCodeVisible ? 'Hide' : 'Reveal'} room code" aria-pressed="${roomCodeVisible}">${roomCodeVisible ? state.code : '••••••'}</button><button class="secondary small-button" data-action="copy-code">Copy code</button><button class="secondary small-button" data-action="copy-link">Copy invite</button><button class="secondary small-button" data-action="leave">Leave game</button></div></div>
+  app.innerHTML = `<div class="room-bar"><a class="room-brand" href="/" aria-label="Retcon home">RETCON</a><div class="inline"><button class="secondary small-button landscape-room-toggle" popovertarget="landscape-room-panel" aria-label="Room controls and players">Room</button><button type="button" class="room-code" data-action="toggle-code" aria-label="${roomCodeVisible ? 'Hide' : 'Reveal'} room code" aria-pressed="${roomCodeVisible}">${roomCodeVisible ? state.code : '••••••'}</button><button class="secondary small-button" data-action="copy-code">Copy code</button><button class="secondary small-button" data-action="copy-link">Copy invite</button><button class="secondary small-button" data-action="leave">Leave game</button></div></div>
     <div id="landscape-room-panel" class="landscape-room-panel" popover="auto" aria-labelledby="landscape-room-title"><h3 id="landscape-room-title">Room</h3><div class="room-menu-code"><code>${state.code}</code><button class="secondary small-button" data-action="copy-code">Copy code</button></div><div class="room-menu-roster" aria-label="Players"></div></div>
     <div class="layout phase-${state.phase}"><section id="stage"></section><aside id="scores" class="panel scoreboard" aria-label="Players and scores"></aside></div>`;
   renderScores();
@@ -254,7 +254,7 @@ function renderScores() {
     const gain = state.result?.gains[player.id];
     const status = !player.connected ? 'Offline' : player.ready ? 'Ready' : 'Drawing';
     const phaseStatus = status === 'Drawing' ? ({ draw: 'Drawing', claim: 'Choosing', judge: 'Voting' })[state.phase] : status;
-    return `<div class="score-row ${player.ready ? 'is-ready' : ''} ${!player.connected ? 'is-offline' : ''}">${compact ? '' : `<span class="score-rank">${index + 1}</span>`}${portraitMarkup(player)}<span class="score-name">${escape(player.name)}${player.id === state.meId ? '<span class="you-label">you</span>' : ''}${compact ? '' : `<small>${gain ? `+${gain.judging + gain.belief} this round` : player.id === state.hostId ? 'Host' : ''}</small>`}</span>${compact ? `<span class="presence" role="img" aria-label="${phaseStatus}">${player.ready ? '✓' : !player.connected ? '−' : '•'}</span>` : `<span class="score-value">${player.score.toLocaleString()}</span>`}</div>`;
+    return `<div class="score-row ${player.ready ? 'is-ready' : ''} ${!player.connected ? 'is-offline' : ''}">${compact ? '' : `<span class="score-rank">${index + 1}</span>`}${portraitMarkup(player)}<span class="score-name">${escape(player.name)}${player.id === state.meId ? '<span class="you-label">you</span>' : ''}${compact ? '' : `<small>${gain ? `<span class="points">+${gain.judging + gain.belief}</span>` : player.id === state.hostId ? 'Host' : ''}</small>`}</span>${compact ? `<span class="presence" role="img" aria-label="${phaseStatus}">${player.ready ? '✓' : !player.connected ? '−' : '•'}</span>` : `<span class="score-value">${player.score.toLocaleString()}</span>`}</div>`;
   }).join('')}`;
   paintPortraits();
 }
@@ -339,7 +339,7 @@ function renderStage() {
     if (drawingTool === 'bucket') drawingTool = 'pencil';
     stage.innerHTML = `<div class="lobby-heading"><div><h1>Make yourself known.</h1></div><span id="lobby-count"></span></div>
       <div class="lobby-grid"><section class="lobby-gathering" aria-label="Players and invitations">
-        <div class="lobby-invite"><button class="invite-qr-button" data-action="copy-link" aria-label="Copy invite link" title="Click to copy invite link"><img class="invite-qr" src="${gameEndpoint}?op=invite-qr&room=${state.code}" alt="Scan to join this room" width="144" height="144"><span>Click to copy link</span></button><div><h2>Bring your friends.</h2><button class="invite-code" data-action="copy-code" aria-label="Copy room code ${state.code}" title="Click to copy room code">${state.code}</button><p class="muted">Click to copy code</p></div></div>
+        <div class="lobby-invite"><button class="invite-qr-button" data-action="copy-link" aria-label="Copy invite link" title="Click to copy invite link"><img class="invite-qr" src="${gameEndpoint}?op=invite-qr&room=${state.code}" alt="Scan to join this room" width="144" height="144"><span>Click to copy link</span></button><div class="invite-code-area"><button class="invite-code" data-action="copy-code" aria-label="Copy room code ${state.code}" title="Click to copy room code">${state.code}</button></div></div>
         <div id="lobby-players" class="lobby-players"></div>
         <details class="lobby-settings"><summary>Game settings</summary><div id="lobby-settings-fields"></div></details>
         <div class="footer-actions"><p id="lobby-wait" class="muted"></p><button class="primary" id="lobby-start" data-action="start">Start game</button></div>${rules()}
@@ -354,7 +354,7 @@ function renderStage() {
     return;
   }
   if (state.phase === 'draw') {
-    stage.innerHTML = `${heading('', 'Draw your assigned prompt. No words or letters.')}<div class="prompt assigned-prompt"><button class="secondary shuffle-prompt" data-action="reroll-prompt" aria-label="Shuffle prompt" title="Shuffle prompt" ${state.me.drawingDone ? 'disabled' : ''}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h3c5 0 7 12 12 12h3M17 14l4 4-4 4M3 18h3c2 0 4-3 6-6s4-6 6-6h3M17 2l4 4-4 4"/></svg></button><span id="assigned-prompt">${escape(sentence(state.me.original))}</span></div>
+    stage.innerHTML = `${heading()}<div class="prompt assigned-prompt"><button class="secondary shuffle-prompt" data-action="reroll-prompt" aria-label="Shuffle prompt" title="Shuffle prompt" ${state.me.drawingDone ? 'disabled' : ''}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h3c5 0 7 12 12 12h3M17 14l4 4-4 4M3 18h3c2 0 4-3 6-6s4-6 6-6h3M17 2l4 4-4 4"/></svg></button><span id="assigned-prompt">${escape(sentence(state.me.original))}</span></div>
       <div class="drawing-workspace ${state.me.drawingDone ? 'drawing-locked' : ''}"><div class="canvas-wrap"><canvas id="draw-canvas" width="800" height="500" class="${state.me.drawingDone ? '' : 'drawing'}" aria-label="Your drawing"></canvas></div>
       </div>
       <div class="drawing-controls ${state.me.drawingDone ? 'drawing-locked' : ''}">${drawingTools()}<div class="brush-settings"><div class="tools">${colors.map((color) => `<button class="swatch ${color === penColor ? 'selected' : ''}" style="--swatch:${color}" data-color="${color}" aria-label="${({ '#172033': 'Black', '#ffffff': 'White', '#7057ff': 'Purple', '#ee5b75': 'Pink', '#13816a': 'Green', '#ef9b24': 'Orange', '#e53935': 'Red', '#f4d438': 'Yellow', '#24bfd1': 'Cyan', '#3478e5': 'Blue', '#915c38': 'Brown' })[color]}" aria-pressed="${color === penColor}"></button>`).join('')}</div>
@@ -386,7 +386,7 @@ function renderStage() {
   if (state.phase === 'judge') {
     const targets = state.gallery.filter((entry) => entry.playerId !== state.meId);
     stage.innerHTML = `${heading()}<div class="gallery">${targets.map((entry) => `<article class="drawing-card"><canvas width="800" height="500" data-gallery="${entry.playerId}" aria-label="Drawing by ${escape(name(entry.playerId))}"></canvas><div class="card-info"><div class="card-head">${portraitMarkup(state.players.find((player) => player.id === entry.playerId))}<strong>${escape(name(entry.playerId))}</strong></div><div class="prompt">${escape(sentence(entry.claim))}</div><div class="vote-buttons"><button class="choice" data-vote="true" data-player="${entry.playerId}"><span class="vote-mark" aria-hidden="true">✓</span>Truth</button><button class="choice lie" data-vote="false" data-player="${entry.playerId}"><span class="vote-mark" aria-hidden="true">✓</span>Lie</button></div></div></article>`).join('')}</div>
-      ${targets.length === 0 ? '<div class="waiting">No other drawings to judge. Waiting for the others…</div>' : ''}<div class="footer-actions"><p id="vote-count" class="muted"></p><button class="primary" data-action="finish-votes" ${targets.length ? '' : 'hidden'}>Submit</button></div><div class="footer-actions">${readyMarkup()}</div>`;
+      ${targets.length === 0 ? '<div class="waiting">No other drawings to judge. Waiting for the others…</div>' : ''}<div class="footer-actions vote-footer" ${targets.length ? '' : 'hidden'}><button class="primary" data-action="finish-votes">Submit</button></div><div class="footer-actions">${readyMarkup()}</div>`;
     paintGallery(state.gallery);
     updateVotes();
     return;
@@ -400,7 +400,7 @@ function renderStage() {
     const current = result.entries[Math.floor(step / 3)];
     const summary = `<div class="round-summary"><div class="round-total"><span>You earned</span><strong>+${gain.judging + gain.belief}</strong></div><div class="round-breakdown"><span>Correct votes <b>+${gain.judging}</b></span><span>Believed by others <b>+${gain.belief}</b></span></div></div>`;
     stage.innerHTML = `${heading()}${!guided || complete ? summary : ''}${guided ? `<p class="reveal-progress">Drawing ${Math.floor(step / 3) + 1} / ${result.entries.length}</p>` : ''}<div class="gallery ${guided ? 'guided-gallery' : ''}">${guided ? revealCard(current, step % 3) : result.entries.map((entry) => revealCard(entry)).join('')}</div>
-      ${result.entries.length ? '' : '<div class="waiting">No drawings · +0</div>'}<div class="footer-actions"><p class="muted" data-wait-host>Waiting for ${escape(name(state.hostId))}</p>${guided && !complete ? `<button class="primary" data-action="reveal-next" data-host-only>${['Reveal truth', 'Show votes', 'Next drawing'][step % 3]}</button>` : `<button class="primary" data-action="next" data-host-only>${state.round === state.totalRounds ? 'Final scores' : 'Next round'}</button>`}</div>`;
+      ${result.entries.length ? '' : '<div class="waiting">No drawings · <span class="points">+0</span></div>'}<div class="footer-actions"><p class="muted" data-wait-host>Waiting for ${escape(name(state.hostId))}</p>${guided && !complete ? `<button class="primary" data-action="reveal-next" data-host-only>${['Reveal truth', 'Show votes', 'Next drawing'][step % 3]}</button>` : `<button class="primary" data-action="next" data-host-only>${state.round === state.totalRounds ? 'Final scores' : 'Next round'}</button>`}</div>`;
     paintGallery(result.entries);
     updateHostControls();
     return;
@@ -420,26 +420,51 @@ function revealComplete() {
 function revealCard(entry, level = 2) {
   const own = entry.playerId === state.meId;
   const details = drawingScoreDetails(entry, state.meId, name);
-  return `<article class="drawing-card"><canvas width="800" height="500" data-gallery="${entry.playerId}" aria-label="Drawing by ${escape(name(entry.playerId))}"></canvas><div class="card-info"><div class="card-head"><strong>${escape(name(entry.playerId))}${own ? ' (you)' : ''}</strong>${level >= 1 ? `<span class="badge ${entry.truth ? '' : 'lie'}">${entry.truth ? 'TRUTH' : 'LIE'}</span>` : '<span class="muted">Truth or lie?</span>'}</div><div class="prompt">${escape(sentence(entry.claim))}</div>${level < 1 || entry.truth ? '' : `<p class="reveal-line">Original: <strong>${escape(sentence(entry.original))}</strong></p>`}${level >= 2 ? `<div class="score-details">${own ? '<span class="score-caption">Truth votes → you</span>' : ''}${details.map((detail) => `<div class="score-detail-row"><span>${own ? escape(detail.playerName) : 'You'} <span class="muted">${detail.choice === 'No vote' ? 'skipped' : `${own ? 'voted' : 'guessed'} ${escape(detail.choice)}`}</span></span><strong class="${detail.points ? 'round-gain' : 'muted'}">${!own && detail.outcome === 'Correct' ? '<span aria-label="Correct">✓</span> ' : ''}+${detail.points}</strong></div>`).join('')}</div>` : ''}</div></article>`;
+  return `<article class="drawing-card"><canvas width="800" height="500" data-gallery="${entry.playerId}" aria-label="Drawing by ${escape(name(entry.playerId))}"></canvas><div class="card-info"><div class="card-head"><strong>${escape(name(entry.playerId))}${own ? ' (you)' : ''}</strong>${level >= 1 ? `<span class="badge ${entry.truth ? '' : 'lie'}">${entry.truth ? 'TRUTH' : 'LIE'}</span>` : '<span class="muted">Truth or lie?</span>'}</div><div class="prompt">${escape(sentence(entry.claim))}</div>${level < 1 || entry.truth ? '' : `<p class="reveal-line">Original: <strong>${escape(sentence(entry.original))}</strong></p>`}${level >= 2 ? `<div class="score-details">${own ? '<span class="score-caption">Truth votes → you</span>' : ''}${details.map((detail) => `<div class="score-detail-row"><span>${own ? escape(detail.playerName) : 'You'} <span class="muted">${detail.choice === 'No vote' ? 'skipped' : `guessed ${escape(detail.choice)}`}</span></span><strong class="${detail.points ? 'round-gain' : 'muted'}">${!own && detail.outcome === 'Correct' ? '<span aria-label="Correct">✓</span> ' : ''}+${detail.points}</strong></div>`).join('')}</div>` : ''}</div></article>`;
 }
 
 function closeWordPicker(restoreFocus = true) {
   const slot = activePicker?.slot;
   const dialog = document.querySelector('#word-picker');
   if (dialog?.open) dialog.close();
-  if (pickerScrollPosition !== null) {
-    document.body.classList.remove('picker-open');
-    document.body.style.removeProperty('top');
-    window.scrollTo(0, pickerScrollPosition);
-    pickerScrollPosition = null;
-  }
+  restorePickerPage();
   activePicker = null;
   document.querySelectorAll('[data-edit-slot]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
   if (restoreFocus && slot) document.querySelector(`[data-edit-slot="${slot}"]`)?.focus({ preventScroll: true });
 }
 
+function restorePickerPage() {
+  if (pickerScrollPosition !== null) {
+    document.body.classList.remove('picker-open');
+    document.body.style.removeProperty('top');
+    document.documentElement.style.removeProperty('--picker-height');
+    document.documentElement.style.removeProperty('--picker-top');
+    window.scrollTo(0, pickerScrollPosition);
+    pickerScrollPosition = null;
+  }
+}
+
 function pickerWords(slot) {
   return library[slot].filter((word) => state.settings?.wordPool !== 'familiar' || word.familiar);
+}
+
+function updatePickerViewport() {
+  if (pickerScrollPosition === null) return;
+  const viewport = window.visualViewport;
+  document.documentElement.style.setProperty('--picker-height', `${viewport?.height ?? innerHeight}px`);
+  document.documentElement.style.setProperty('--picker-top', `${viewport?.offsetTop ?? 0}px`);
+}
+
+function updatePickerLayout() {
+  if (!activePicker) return;
+  if (compactPickerQuery.matches) {
+    if (pickerScrollPosition === null) {
+      pickerScrollPosition = window.scrollY;
+      document.body.style.top = `-${pickerScrollPosition}px`;
+      document.body.classList.add('picker-open');
+    }
+    updatePickerViewport();
+  } else restorePickerPage();
 }
 
 function openWordPicker(slot) {
@@ -460,16 +485,13 @@ function openWordPicker(slot) {
     .map((family) => `<button class="word-button" data-family="${escape(family)}">${escape(family)}</button>`).join('');
   renderPickerResults();
   document.querySelector(`[data-edit-slot="${slot}"]`).setAttribute('aria-expanded', 'true');
-  if (modalPickerQuery.matches) {
-    // Fixed positioning also prevents background rubber-banding on iOS.
-    pickerScrollPosition = window.scrollY;
-    document.body.style.top = `-${pickerScrollPosition}px`;
-    document.body.classList.add('picker-open');
-    dialog.showModal();
+  // Keep the drawing and choices in separate panes, including above a phone keyboard.
+  updatePickerLayout();
+  dialog.show();
+  if (compactPickerQuery.matches) {
     dialog.querySelector('.picker-body').scrollTop = 0;
     dialog.querySelector('.picker-close').focus({ preventScroll: true });
   } else {
-    dialog.show();
     search.focus();
   }
 }
@@ -500,8 +522,6 @@ function updateClaimPreview() {
 function updateVotes() {
   const targets = state.gallery.filter((entry) => entry.playerId !== state.meId);
   const voted = targets.filter((entry) => typeof state.me.votes[entry.playerId] === 'boolean').length;
-  const counter = document.querySelector('#vote-count');
-  if (counter) counter.textContent = `${voted} / ${targets.length}`;
   document.querySelectorAll('[data-vote]').forEach((button) => {
     const selected = state.me.votes[button.dataset.player] === (button.dataset.vote === 'true');
     button.classList.toggle('selected', selected);
@@ -840,7 +860,7 @@ async function boot() {
 
 void boot();
 
-// A desktop picker stays in the page; mobile uses native modal focus containment.
+// The compact picker shares its viewport with the drawing instead of covering it.
 app.addEventListener('cancel', (event) => {
   if (event.target.id === 'word-picker') {
     event.preventDefault();
@@ -852,6 +872,19 @@ document.addEventListener('keydown', (event) => {
     event.preventDefault();
     closeWordPicker();
   }
+  if (event.key === 'Tab' && activePicker && compactPickerQuery.matches) {
+    const controls = [...document.querySelector('.claim-layout').querySelectorAll('button:not(:disabled), input, summary')]
+      .filter((control) => control.getClientRects().length);
+    const first = controls[0];
+    const last = controls.at(-1);
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 });
 document.addEventListener('click', (event) => {
   if (activePicker && !event.target.closest('#word-picker, [data-edit-slot]')) closeWordPicker(false);
@@ -860,4 +893,6 @@ document.addEventListener('click', (event) => {
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeWordPicker();
   }
 }, true);
-modalPickerQuery.addEventListener('change', () => closeWordPicker());
+compactPickerQuery.addEventListener('change', updatePickerLayout);
+window.visualViewport?.addEventListener('resize', updatePickerViewport);
+window.visualViewport?.addEventListener('scroll', updatePickerViewport);

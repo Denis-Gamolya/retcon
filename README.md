@@ -1,4 +1,4 @@
-# Sketchy Alibis — Netlify edition
+# Retcon — Netlify edition
 
 The existing sketchbook design and gameplay, with a stateless Netlify Function
 and site-scoped Netlify Blobs. No GitHub repository, local commands, API keys,
@@ -64,6 +64,8 @@ https://docs.netlify.com/deploy/create-deploys/#drag-and-drop
 - Draw your phrase for 60 seconds. Shuffle has a one-second cooldown.
 - The action always stays fixed. During 30 seconds, keep the phrase or change
   the character, object, or both. Underlined parts open searchable family pickers.
+  The picker keeps the drawing visible beside the choices on desktop and in a
+  separate pane on smaller screens; only the choices scroll in compact mode.
 - Vote Truth or Lie on the other drawings during 60 seconds.
 - Correct vote: +500. A Truth vote on your drawing: +300, even if you lied.
 - Submit/Unsubmit, readiness, host controls, leaving, and shared ties are retained.
@@ -134,6 +136,13 @@ verified separately. See `VERIFICATION.md` for the scope of those checks.
 - `verification/game.zip`: portable prepackaged function for inspection.
 - `tools/`: build, packaging, and local development helpers.
 - `assets/`: original lettering and artwork sources.
+
+The display fonts include Denis's original alphabet, digits, and punctuation.
+`assets/lettering/sources.json` maps each PNG sheet to characters; explicit bounds
+keep multipart symbols together and place smaller punctuation on the baseline.
+With the pinned dependencies in `tools/lettering-requirements.txt`, run
+`python tools/build-lettering.py` to regenerate both WOFF2 fonts and their glyph
+manifest. Ordinary game builds use the compiled fonts and do not require Python.
 
 The prepackaged function is evidence of the verified build, not a workaround
 for static Drop. The logged-in source build packages the function on Netlify.

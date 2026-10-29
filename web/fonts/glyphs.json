@@ -1,4 +1,44 @@
 {
+  "!": {
+    "sheet": "symbols.png",
+    "bounds": [
+      410,
+      237,
+      123,
+      546
+    ],
+    "advance": 251
+  },
+  "+": {
+    "sheet": "0-+.png",
+    "bounds": [
+      1137,
+      306,
+      424,
+      377
+    ],
+    "advance": 757
+  },
+  ",": {
+    "sheet": "symbols.png",
+    "bounds": [
+      1267,
+      579,
+      58,
+      97
+    ],
+    "advance": 168
+  },
+  "-": {
+    "sheet": "0-+.png",
+    "bounds": [
+      608,
+      435,
+      350,
+      147
+    ],
+    "advance": 512
+  },
   ".": {
     "sheet": "xyz..png",
     "bounds": [
@@ -8,6 +48,126 @@
       81
     ],
     "advance": 162
+  },
+  "0": {
+    "sheet": "0-+.png",
+    "bounds": [
+      81,
+      202,
+      388,
+      642
+    ],
+    "advance": 574
+  },
+  "1": {
+    "sheet": "123.png",
+    "bounds": [
+      120,
+      144,
+      302,
+      547
+    ],
+    "advance": 529
+  },
+  "2": {
+    "sheet": "123.png",
+    "bounds": [
+      668,
+      153,
+      294,
+      520
+    ],
+    "advance": 541
+  },
+  "3": {
+    "sheet": "123.png",
+    "bounds": [
+      1281,
+      157,
+      346,
+      569
+    ],
+    "advance": 577
+  },
+  "4": {
+    "sheet": "456.png",
+    "bounds": [
+      392,
+      147,
+      276,
+      475
+    ],
+    "advance": 554
+  },
+  "5": {
+    "sheet": "456.png",
+    "bounds": [
+      844,
+      27,
+      421,
+      652
+    ],
+    "advance": 609
+  },
+  "6": {
+    "sheet": "456.png",
+    "bounds": [
+      1441,
+      80,
+      360,
+      610
+    ],
+    "advance": 562
+  },
+  "7": {
+    "sheet": "789.png",
+    "bounds": [
+      265,
+      173,
+      383,
+      523
+    ],
+    "advance": 682
+  },
+  "8": {
+    "sheet": "789.png",
+    "bounds": [
+      905,
+      116,
+      317,
+      541
+    ],
+    "advance": 558
+  },
+  "9": {
+    "sheet": "789.png",
+    "bounds": [
+      1430,
+      115,
+      295,
+      549
+    ],
+    "advance": 517
+  },
+  ";": {
+    "sheet": "symbols.png",
+    "bounds": [
+      1262,
+      479,
+      64,
+      197
+    ],
+    "advance": 170
+  },
+  "?": {
+    "sheet": "symbols.png",
+    "bounds": [
+      815,
+      207,
+      206,
+      561
+    ],
+    "advance": 372
   },
   "A": {
     "sheet": "abc.png",

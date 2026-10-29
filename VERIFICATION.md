@@ -14,6 +14,40 @@ Verified locally and on the existing Netlify project on October 20, 2026.
 - Both test players left afterward. This hosted smoke check does not replace
   the complete local games below or establish cloud concurrency limits.
 
+## October 28 drawn points and combined release
+
+- Imported the original digit and symbol sheets without changing the source
+  drawings. Rebuilt both fonts with 0–9, plus, minus, comma, and extra punctuation;
+  the comma uses the lower stroke of the supplied semicolon. Existing alphabet
+  bounds and advances remain identical. Both fonts' character maps, nonempty
+  digit contours, and punctuation placement passed font-table checks.
+- Earned points, breakdowns, standings, rule examples, and final scores use the
+  drawn glyphs. Positive earned points remain green; zero awards remain muted.
+- Local desktop/mobile Chrome sessions completed three rounds with a 2,400 to
+  1,900 final result, loaded the custom score font, and reported no page errors.
+  Large totals also fit 320px, 390px, and 768px layouts without horizontal overflow.
+- All 46 regression tests passed locally before the approved combined release.
+- Lobby invite wording was simplified and the code sits 16–24px beside the QR
+  at phone and desktop widths. Standings omit "this round"; results say "guessed"
+  consistently for the player's own choices and other players' choices.
+
+## October 26 UI batch, included in the October 28 release
+
+- Renamed the visible game, page title, description, and lettering sample to
+  Retcon, with the home slogan "Draw Now. Lie Later." Existing room sessions,
+  font assets, repository URL, and hosting configuration remain compatible.
+- Kept local during review, then included in the single approved October 28 batch.
+- Removed the room-code copy caption, drawing-phase instruction, and vote count
+  fraction. The QR-link caption and player readiness remain.
+- Settings use a thin neutral keyboard-focus outline instead of the red ring.
+- Local Chrome sessions checked eight viewport sizes, from 320×568 to 1280×900,
+  including 568×320 and 844×390 landscape. Picker and drawing bounds never
+  overlap; compact layouts keep both on screen with independently scrolling
+  choices. Search, closing, restored page scrolling, and zero/one voting-target
+  screens passed without page errors. These are viewport checks, not tests on
+  a physical phone or its software keyboard.
+- All 46 automated game and packaged-function regression tests passed locally.
+
 ## October 26 lobby and gameplay expansion
 
 - Lobby polish: isolated desktop/mobile Chrome checks verified circular portrait
